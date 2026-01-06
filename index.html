@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrangeTV - 聚合影視搜尋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #0c0a09; color: #fafaf9; }
+        .orange-glass { background: rgba(24, 24, 27, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(251, 146, 60, 0.1); }
+        .video-aspect { aspect-ratio: 16 / 9; }
+        .orange-shadow { shadow: 0 10px 15px -3px rgba(251, 146, 60, 0.2); }
+        .loader-orange { border-top-color: #f97316; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- 密碼鎖介面 -->
+    <div id="authOverlay" class="fixed inset-0 z-[100] bg-orange-950/20 backdrop-blur-3xl flex items-center justify-center px-4">
+        <div class="orange-glass p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border-orange-500/20">
+            <div class="bg-orange-500 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-orange-500/40 rotate-12">
+                <i data-lucide="tv" class="text-white w-10 h-10 -rotate-12"></i>
+            </div>
+            <h1 class="text-3xl font-black mb-2 text-orange-500 italic">ORANGE TV</h1>
+            <p class="text-stone-400 mb-8 font-medium">請輸入系統存取密碼</p>
+            <div class="relative mb-6">
+                <input type="password" id="passInput" class="w-full bg-stone-900 border border-stone-800 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-orange-500 outline-none text-center tracking-[0.5em] text-xl" placeholder="••••">
+            </div>
+            <button onclick="verifyPassword()" id="verifyBtn" class="w-full bg-orange-600 hover:bg-orange-500 py-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-lg shadow-orange-600/30">
+                進入橘子影視
+            </button>
+            <p id="errorMsg" class="text-red-400 mt-4 text-sm font-medium hidden">密碼驗證失敗，請再試一次</p>
+        </div>
+    </div>
+
+    <!-- 主程式內容 -->
+    <div id="mainContent" class="opacity-0 transition-opacity duration-1000">
+        <!-- 導航欄 -->
+        <nav class="sticky top-0 z-50 orange-glass px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-orange-500 p-2 rounded-xl shadow-lg shadow-orange-500/20">
+                    <i data-lucide="play" class="text-white w-5 h-5 fill-current"></i>
+                </div>
+                <span class="text-2xl font-black tracking-tighter text-orange-500 italic">ORANGE<span class="text-white">TV</span></span>
+            </div>
+            
+            <div class="flex items-center space-x-4 text-xs font-bold">
+                <div id="statusIndicator" class="flex items-center bg-stone-900 border border-stone-800 px-4 py-2 rounded-full">
+                    <div id="storageDot" class="w-2 h-2 rounded-full mr-2 bg-stone-500"></div>
+                    <span id="storageLabel" class="text-stone-400 uppercase tracking-widest">Initialising</span>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container mx-auto px-4 py-8">
+            <!-- 播放器 -->
+            <section id="playerWrapper" class="mb-12 hidden">
+                <div class="max-w-6xl mx-auto">
+                    <div class="video-aspect bg-black rounded-[2rem] overflow-hidden shadow-2xl border-4 border-stone-900 shadow-orange-500/10">
+                        <video id="player" controls class="w-full h-full"></video>
+                    </div>
+                    <div class="mt-8 flex flex-col md:flex-row justify-between items-start gap-4">
+                        <div>
+                            <span id="playerSourceTag" class="px-3 py-1 bg-orange-500/10 text-orange-500 rounded-lg text-xs font-bold mb-2 inline-block uppercase tracking-wider">Source Name</span>
+                            <h2 id="playerTitle" class="text-3xl font-black">影片標題</h2>
+                        </div>
+                        <button onclick="closePlayer()" class="bg-stone-900 p-4 rounded-2xl hover:bg-stone-800 transition border border-stone-800">
+                            <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 聚合搜尋列 -->
+            <div class="max-w-4xl mx-auto mb-16">
+                <div class="relative group">
+                    <input type="text" id="aggSearchInput" placeholder="輸入關鍵字聚合搜尋所有源..." class="w-full bg-stone-900 border-2 border-stone-800 rounded-3xl py-6 pl-16 pr-8 outline-none focus:border-orange-500 transition-all text-xl shadow-2xl group-hover:border-stone-700">
+                    <i data-lucide="search" class="absolute left-6 top-6 text-stone-500 w-8 h-8 group-focus-within:text-orange-500 transition-colors"></i>
+                    <div id="searchBadge" class="absolute right-6 top-7 text-xs font-bold text-stone-500 bg-stone-800 px-3 py-1 rounded-lg hidden">聚合中...</div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                    <span class="text-stone-500 text-xs font-bold uppercase mr-2 mt-2">常用熱搜:</span>
+                    <button onclick="quickSearch('慶餘年')" class="text-xs bg-stone-900 hover:bg-orange-500/20 hover:text-orange-500 px-3 py-1.5 rounded-lg border border-stone-800 transition">慶餘年</button>
+                    <button onclick="quickSearch('死侍')" class="text-xs bg-stone-900 hover:bg-orange-500/20 hover:text-orange-500 px-3 py-1.5 rounded-lg border border-stone-800 transition">死侍</button>
+                    <button onclick="quickSearch('短劇')" class="text-xs bg-stone-900 hover:bg-orange-500/20 hover:text-orange-500 px-3 py-1.5 rounded-lg border border-stone-800 transition">旺旺短劇</button>
+                </div>
+            </div>
+
+            <!-- 狀態反饋 -->
+            <div id="loadingUI" class="hidden flex flex-col items-center py-20">
+                <div class="loader-orange border-4 border-stone-800 h-16 w-16 rounded-full mb-4"></div>
+                <p class="text-orange-500 font-bold animate-pulse">正在穿梭 20+ 資源站搜尋中...</p>
+            </div>
+
+            <!-- 結果網格 -->
+            <div id="resultsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <!-- 影片將由此載入 -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SOURCES = {
+            "dyttzy": { "api": "http://caiji.dyttzyapi.com/api.php/provide/vod", "name": "電影天堂" },
+            "heimuer": { "api": "https://json.heimuer.xyz/api.php/provide/vod", "name": "黑木耳" },
+            "ruyi": { "api": "https://cj.rycjapi.com/api.php/provide/vod", "name": "如意" },
+            "bfzy": { "api": "https://bfzyapi.com/api.php/provide/vod", "name": "暴風" },
+            "tyyszy": { "api": "https://tyyszy.com/api.php/provide/vod", "name": "天涯" },
+            "ffyzy": { "api": "http://cj.ffzyapi.com/api.php/provide/vod", "name": "非凡" },
+            "iqiyi": { "api": "https://www.iqiyizyapi.com/api.php/provide/vod", "name": "愛奇藝" },
+            "wolong": { "api": "https://wolongzyw.com/api.php/provide/vod", "name": "臥龍" },
+            "jisu": { "api": "https://jszyapi.com/api.php/provide/vod", "name": "極速" },
+            "lzi": { "api": "https://cj.lziapi.com/api.php/provide/vod", "name": "量子" },
+            "hongniuzy": { "api": "https://www.hongniuzy2.com/api.php/provide/vod", "name": "紅牛" },
+            "AV13": { "api": "https://shayuapi.com/api.php/provide/vod", "name": "AV-鯊魚" },
+            "AV21": { "api": "https://www.kxgav.com/api/json.php", "name": "AV-白嫖" },
+            "AV11": { "api": "https://Naixxzy.com/api.php/provide/vod", "name": "AV-奶香" },
+            "AV24": { "api": "https://www.msnii.com/api/json.php", "name": "AV-美少女" },
+            "ikun": { "api": "https://ikunzyapi.com/api.php/provide/vod", "name": "iKun" },
+            "wwzy": { "api": "https://wwzy.tv/api.php/provide/vod", "name": "旺旺短劇" }
+        };
+
+        let currentStorage = 'local';
+        const hls = new Hls();
+
+        window.onload = () => {
+            lucide.createIcons();
+            initializeApp();
+        };
+
+        async function initializeApp() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                currentStorage = config.storageMode;
+                
+                const label = document.getElementById('storageLabel');
+                const dot = document.getElementById('storageDot');
+                label.innerText = currentStorage;
+                dot.className = `w-2 h-2 rounded-full mr-2 ${currentStorage === 'd1' ? 'bg-orange-500 shadow-[0_0_8px_#f97316]' : 'bg-stone-500'}`;
+
+                if (!config.hasPassword) showMain();
+            } catch (e) {
+                document.getElementById('storageLabel').innerText = "OFFLINE";
+                console.log("運行於本地模式");
+            }
+        }
+
+        async function verifyPassword() {
+            const pwd = document.getElementById('passInput').value;
+            const btn = document.getElementById('verifyBtn');
+            const error = document.getElementById('errorMsg');
+            
+            btn.disabled = true;
+            btn.innerText = "驗證中...";
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'verify', password: pwd })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMain();
+                } else {
+                    error.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerText = "進入橘子影視";
+                }
+            } catch (e) {
+                showMain(); // Fallback
+            }
+        }
+
+        function showMain() {
+            document.getElementById('authOverlay').style.display = 'none';
+            const main = document.getElementById('mainContent');
+            main.classList.remove('opacity-0');
+            // 預設加載其中一個源的最新影片
+            quickSearch('');
+        }
+
+        // 搜尋邏輯
+        const searchInput = document.getElementById('aggSearchInput');
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performAggregateSearch(e.target.value);
+        });
+
+        function quickSearch(kw) {
+            searchInput.value = kw;
+            performAggregateSearch(kw);
+        }
+
+        async function performAggregateSearch(keyword) {
+            const grid = document.getElementById('resultsGrid');
+            const loading = document.getElementById('loadingUI');
+            const badge = document.getElementById('searchBadge');
+            
+            grid.innerHTML = '';
+            loading.classList.remove('hidden');
+            badge.classList.remove('hidden');
+
+            // 聚合所有 API 請求
+            const searchPromises = Object.entries(SOURCES).map(async ([key, source]) => {
+                try {
+                    const url = `${source.api}?ac=videolist${keyword ? `&wd=${encodeURIComponent(keyword)}` : ''}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    return { sourceName: source.name, list: data.list || [] };
+                } catch (err) {
+                    return { sourceName: source.name, list: [], error: true };
+                }
+            });
+
+            // 等待所有請求 (即使失敗也會繼續)
+            const allResults = await Promise.allSettled(searchPromises);
+            
+            loading.classList.add('hidden');
+            badge.classList.add('hidden');
+
+            let totalCount = 0;
+            allResults.forEach(res => {
+                if (res.status === 'fulfilled' && res.value.list.length > 0) {
+                    totalCount += res.value.list.length;
+                    renderBatch(res.value.list, res.value.sourceName);
+                }
+            });
+
+            if (totalCount === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-20 text-stone-500 font-bold">在所有資源站中皆找不到「${keyword}」</div>`;
+            }
+        }
+
+        function renderBatch(list, sourceName) {
+            const grid = document.getElementById('resultsGrid');
+            list.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "group cursor-pointer bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden hover:border-orange-500/50 transition-all hover:-translate-y-2";
+                card.onclick = () => playMovie(item, sourceName);
+                
+                card.innerHTML = `
+                    <div class="relative aspect-[3/4.5] overflow-hidden bg-stone-800">
+                        <img src="${item.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450/1c1917/f97316?text=OrangeTV'">
+                        <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent"></div>
+                        <div class="absolute top-2 right-2">
+                            <span class="text-[10px] bg-orange-600 px-2 py-1 rounded-lg font-black text-white uppercase shadow-lg">${sourceName}</span>
+                        </div>
+                        <div class="absolute bottom-3 left-3">
+                            <span class="text-[10px] bg-white/10 backdrop-blur-md border border-white/20 px-2 py-1 rounded text-stone-200 font-bold">${item.vod_remarks || 'HD'}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-sm line-clamp-1 group-hover:text-orange-500 transition">${item.vod_name}</h3>
+                        <p class="text-stone-500 text-[10px] mt-1 font-bold uppercase tracking-tighter">${item.vod_class || '分類未知'}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function playMovie(item, sourceName) {
+            const wrapper = document.getElementById('playerWrapper');
+            const video = document.getElementById('player');
+            wrapper.classList.remove('hidden');
+            
+            document.getElementById('playerTitle').innerText = item.vod_name;
+            document.getElementById('playerSourceTag').innerText = sourceName;
+            
+            // 解析播放路徑
+            const playLinks = item.vod_play_url.split('#');
+            const m3u8Link = playLinks.find(l => l.includes('m3u8')) || playLinks[0];
+            const finalUrl = m3u8Link.includes('$') ? m3u8Link.split('$')[1] : m3u8Link;
+
+            if (Hls.isSupported()) {
+                hls.destroy();
+                const newHls = new Hls();
+                newHls.loadSource(finalUrl);
+                newHls.attachMedia(video);
+                newHls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = finalUrl;
+                video.play();
+            }
+
+            wrapper.scrollIntoView({ behavior: 'smooth' });
+            saveLog(item, sourceName);
+        }
+
+        function saveLog(item, source) {
+            if (currentStorage === 'd1') {
+                fetch('/api/config', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'save_history', id: item.vod_id, name: item.vod_name, source })
+                });
+            } else {
+                let logs = JSON.parse(localStorage.getItem('orange_history') || '[]');
+                logs = [{ id: item.vod_id, name: item.vod_name, s: source, t: Date.now() }, ...logs];
+                localStorage.setItem('orange_history', JSON.stringify(logs.slice(0, 30)));
+            }
+        }
+
+        function closePlayer() {
+            const video = document.getElementById('player');
+            video.pause();
+            document.getElementById('playerWrapper').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+
+              
