@@ -145,8 +145,7 @@
                         </div>
                         <h1 id="p-title" class="text-4xl font-black mb-6">標題載入中...</h1>
                         <p id="p-desc" class="text-stone-400 leading-relaxed mb-8">簡介載入中...</p>
-                        <button
-id="fav-btn" onclick="toggleFav()" class="flex items-center space-x-2 bg-stone-900 border border-white/10 px-6 py-3 rounded-xl hover:bg-stone-800 transition">
+                        <button id="fav-btn" onclick="toggleFav()" class="flex items-center space-x-2 bg-stone-900 border border-white/10 px-6 py-3 rounded-xl hover:bg-stone-800 transition">
                             <i data-lucide="heart" id="fav-icon"></i>
                             <span>加入收藏</span>
                         </button>
@@ -190,15 +189,13 @@ id="fav-btn" onclick="toggleFav()" class="flex items-center space-x-2 bg-stone-9
             const ov = document.getElementById('overlay');
             if(window.innerWidth <= 768) {
                 sb.classList.toggle('mobile-open');
-                
-ov.classList.toggle('show');
+                ov.classList.toggle('show');
             } else {
-                sb.classList.toggle('si
-debar-collapsed');
+                sb.classList.toggle('sidebar-collapsed');
             }
         }
 
-function switchTab(tab) {
+        function switchTab(tab) {
             document.getElementById('home-view').classList.toggle('hidden', tab !== 'home');
             document.getElementById('fav-view').classList.toggle('hidden', tab !== 'fav');
             
@@ -258,7 +255,7 @@ function switchTab(tab) {
             document.getElementById('player-modal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
 
-document.getElementById('p-title').innerText = item.vod_name;
+            document.getElementById('p-title').innerText = item.vod_name;
             document.getElementById('p-source').innerText = source;
             document.getElementById('p-desc').innerText = item.vod_content ? item.vod_content.replace(/<[^>]+>/g, '') : '無簡介';
 
@@ -351,3 +348,4 @@ document.getElementById('p-title').innerText = item.vod_name;
     </script>
 </body>
 </html>
+
