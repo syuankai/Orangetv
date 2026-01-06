@@ -369,4 +369,130 @@
                 const btn = document.createElement('button');
                 btn.className = "ep-btn bg-stone-800/50 border border-white/5 py-4 rounded-2xl text-[12px] font-black hover:bg-orange-600 hover:text-white transition-all text-stone-300 clickable truncate px-3";
                 btn.innerText = name;
-                btn.onclick = () =
+                btn.onclick = () => {
+ document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('bg-orange-600', 'text-white'));
+                    btn.classList.add('bg-orange-600', 'text-white');
+                    loadVideo(link);
+                };
+                epContainer.appendChild(btn);
+            });
+
+            if (epContainer.firstChild) epContainer.firstChild.click();
+            updateFavUI();
+        }
+
+        function loadVideo(url) {
+            const vUrl = url.trim();
+            
+            // 安全銷毀現有播放器
+            if (art) {
+                if (art.hls) {
+                    art.hls.destroy();
+                    art.hls = null;
+                }
+                art.destroy(true);
+            }
+
+            // 初始化新實例
+            art = new Artplayer({
+                container: '#artplayer',
+                url: vUrl,
+                type: 'm3u8',
+                customType: {
+                    m3u8: function(video, url, art) {
+                        if (Hls.isSupported()) {
+                            const hls = new Hls({
+                                enableWorker: true,
+                                lowLatencyMode: true,
+                                fragLoadingMaxRetry: 3,
+                                manifestLoadingMaxRetry: 3
+                            });
+                            hls.loadSource(url);
+                            hls.attachMedia(video);
+                            art.hls = hls;
+                            
+                            hls.on(Hls.Events.ERROR, (evt, data) => {
+                                if (data.fatal) {
+                                    switch (data.type) {
+                                        case Hls.ErrorTypes.NETWORK_ERROR:
+                                            hls.startLoad();
+                                            break;
+                                        case Hls.ErrorTypes.MEDIA_ERROR:
+                                            hls.recoverMediaError();
+                                            break;
+                                        default:
+                                            art.notice.show = '無法恢復的錯誤，請更換來源';
+                                            hls.destroy();
+                                            break;
+                                    }
+                                }
+                            });
+                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                            // Safari 原生支援
+                            video.src = url;
+                        } else {
+                            art.notice.show = '瀏覽器不支持此影片格式';
+                        }
+                    },
+                },
+                autoplay: true,
+                autoSize: true,
+                playbackRate: true,
+                aspectRatio: true,
+                setting: true,
+                pip: true,
+                fullscreen: true,
+                fullscreenWeb: true,
+                theme: '#f97316',
+                icons: {
+                    loading: '<div class="loader-orange border-4 border-transparent h-12 w-12 rounded-full"></div>',
+                },
+            });
+
+            art.on('video:error', () => {
+                art.notice.show = '資源載入失敗，可能存在跨域限制或網址失效';
+            });
+        }
+
+        function handleToggleFav() {
+            if(!currentVod) return;
+            const idx = favorites.findIndex(f => f.vod_id === currentVod.vod_id);
+            if (idx > -1) favorites.splice(idx, 1);
+            else favorites.push(currentVod);
+            localStorage.setItem('orange_favs', JSON.stringify(favorites));
+            updateFavUI();
+        }
+
+        function updateFavUI() {
+            const isFav = currentVod && favorites.some(f => f.vod_id === currentVod.vod_id);
+            const icon = document.getElementById('favIcon');
+            const btn = document.getElementById('btnFav');
+            icon.setAttribute('data-lucide', isFav ? 'heart-off' : 'heart');
+            btn.className = isFav 
+                ? "flex items-center space-x-3 bg-orange-600 px-8 py-4 rounded-2xl transition shadow-xl shadow-orange-600/30 clickable text-white" 
+                : "flex items-center space-x-3 bg-stone-900 border border-white/10 px-8 py-4 rounded-2xl hover:bg-white/5 transition clickable text-white";
+            lucide.createIcons();
+        }
+
+        function renderFavorites() {
+            const grid = document.getElementById('favGrid');
+            grid.innerHTML = '';
+            if (favorites.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-40 text-center text-stone-600 font-bold">尚未收藏任何影片</div>';
+                return;
+            }
+            renderCards(favorites, '我的收藏', grid);
+        }
+
+        function closePlayer() {
+            if (art) {
+                if (art.hls) art.hls.destroy();
+                art.destroy(true);
+                art = null;
+            }
+            document.getElementById('playerModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body>
+</html>
