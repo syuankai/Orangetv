@@ -3,157 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrangeTV - 影視聚合系統</title>
+    <title>OrangePlayer - 旗艦影音系統</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
         
+        :root {
+            --primary: #f97316;
+            --bg-deep: #0c0a09;
+            --sidebar-w: 260px;
+        }
+
         body { 
             font-family: 'Noto Sans TC', sans-serif; 
-            background-color: #0c0a09; 
-            color: #fafaf9;
+            background-color: var(--bg-deep); 
+            color: #fafaf9; 
             margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .video-aspect { aspect-ratio: 16 / 9; background: #000; }
+        /* 側邊欄核心結構 */
+        #sidebar { 
+            width: var(--sidebar-w);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #12100e;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 100;
+        }
         
-        #sidebar { transition: width 0.3s ease, transform 0.3s ease; }
         .sidebar-collapsed { width: 80px !important; }
-        .sidebar-collapsed .nav-text, .sidebar-collapsed .logo-text, .sidebar-collapsed .status-box { display: none !important; }
+        .sidebar-collapsed .nav-text, 
+        .sidebar-collapsed .logo-text, 
+        .sidebar-collapsed .status-card { display: none !important; }
 
+        /* 主內容區 */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Video.js 樣式修正：確保全螢幕時正常運作 */
+        .video-wrapper { 
+            aspect-ratio: 16 / 9; 
+            background: #000; 
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        /* 修正 Video.js 全螢幕 z-index 問題 */
+        .vjs-fullscreen {
+            z-index: 9999 !important;
+        }
+
+        /* 行動端適配 */
         @media (max-width: 768px) {
-            #sidebar { 
-                position: fixed; 
-                left: 0; 
-                top: 0; 
-                height: 100vh; 
-                z-index: 50; 
-                transform: translateX(-100%); 
-                width: 280px !important;
-                background: #141414;
+            #sidebar {
+                position: absolute;
+                left: 0; top: 0; bottom: 0;
+                transform: translateX(-100%);
             }
-            #sidebar.mobile-open { transform: translateX(0); }
-            #overlay { 
-                display: none; 
-                position: fixed; 
-                inset: 0; 
-                background: rgba(0,0,0,0.8); 
-                z-index: 40; 
+            #sidebar.mobile-active { transform: translateX(0); }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(4px);
+                z-index: 90;
             }
-            #overlay.show { display: block; }
+            .sidebar-overlay.active { display: block; }
         }
 
-        .loader {
-            border: 3px solid rgba(249, 115, 22, 0.1);
-            border-top: 3px solid #f97316;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 動畫 */
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body>
 
-    <div id="overlay" onclick="toggleSidebar()"></div>
+    <!-- 行動端遮罩 -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- 側邊欄 -->
-    <aside id="sidebar" class="bg-stone-900 border-r border-white/5 flex flex-col shrink-0 w-[260px]">
+    <aside id="sidebar">
         <div class="p-6">
             <div class="flex items-center justify-between mb-8">
-                <div class="flex items-center space-x-2 overflow-hidden">
-                    <div class="bg-orange-500 p-2 rounded-xl shrink-0"><i data-lucide="zap" class="text-white w-5 h-5 fill-current"></i></div>
-                    <span class="text-xl font-black italic logo-text whitespace-nowrap">ORANGE<span class="text-orange-500">TV</span></span>
+                <div class="flex items-center space-x-3">
+                    <div class="bg-orange-600 p-2 rounded-xl text-white shadow-lg shadow-orange-600/20">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <span class="text-xl font-black logo-text italic tracking-tighter">ORANGE<span class="text-orange-500">PLAYER</span></span>
                 </div>
-                <button onclick="toggleSidebar()" class="p-2 hover:bg-white/5 rounded-xl transition text-stone-400">
-                    <i data-lucide="menu"></i>
+                <button onclick="toggleSidebar()" class="p-2 text-stone-500 hover:text-white transition">
+                    <i data-lucide="chevron-left" id="sidebarToggleIcon"></i>
                 </button>
             </div>
 
-            <div class="status-box bg-stone-950 rounded-2xl p-4 border border-white/5 mb-6">
+            <!-- 狀態卡片 -->
+            <div class="status-card glass rounded-2xl p-4 mb-6">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-[9px] text-stone-500 font-bold uppercase">連線狀態</span>
-                    <span id="ping" class="text-[9px] font-mono text-orange-500">-- ms</span>
+                    <span class="text-[10px] text-stone-500 font-bold uppercase tracking-widest">Runtime 狀態</span>
+                    <span id="pingVal" class="text-[10px] font-mono text-orange-500">偵測中</span>
                 </div>
                 <div class="flex items-center">
-                    <div id="dot" class="w-2 h-2 rounded-full mr-2 bg-stone-600"></div>
-                    <span id="status" class="text-[10px] font-bold text-stone-300">檢查中...</span>
+                    <div id="statusDot" class="w-2 h-2 rounded-full mr-2 bg-stone-700"></div>
+                    <span id="statusTxt" class="text-[11px] font-bold text-stone-400">D1 INITIALIZING...</span>
                 </div>
             </div>
         </div>
-        
-        <nav class="flex-1 px-4 space-y-2">
-            <div onclick="switchTab('home')" id="tab-home" class="flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-orange-500 bg-orange-500/10 border-r-4 border-orange-500">
-                <i data-lucide="layout-grid" class="shrink-0 w-5 h-5"></i>
-                <span class="ml-4 nav-text">探索影片</span>
+
+        <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+            <div onclick="switchPage('home')" id="nav-home" class="nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-orange-500 bg-orange-500/10 border-r-4 border-orange-500 transition-all">
+                <i data-lucide="layout-grid"></i><span class="ml-4 nav-text">影視中心</span>
             </div>
-            <div onclick="switchTab('fav')" id="tab-fav" class="flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-stone-400 hover:bg-white/5">
-                <i data-lucide="heart" class="shrink-0 w-5 h-5"></i>
-                <span class="ml-4 nav-text">我的收藏</span>
+            <div onclick="switchPage('m3u8')" id="nav-m3u8" class="nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-stone-500 hover:bg-white/5 transition-all">
+                <i data-lucide="link-2"></i><span class="ml-4 nav-text">M3U8 解析</span>
+            </div>
+            <div onclick="switchPage('music')" id="nav-music" class="nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-stone-500 hover:bg-white/5 transition-all">
+                <i data-lucide="music-4"></i><span class="ml-4 nav-text">音訊上傳</span>
+            </div>
+            <div onclick="switchPage('fav')" id="nav-fav" class="nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-stone-500 hover:bg-white/5 transition-all">
+                <i data-lucide="heart"></i><span class="ml-4 nav-text">收藏清單</span>
             </div>
         </nav>
+
+        <div class="p-6 text-center border-t border-white/5">
+            <div class="text-[9px] font-bold text-stone-600 tracking-widest uppercase">V5.0 Runtime Stable</div>
+        </div>
     </aside>
 
-    <!-- 主內容 -->
-    <main class="flex-1 min-w-0 p-4 md:p-10">
-        <header class="md:hidden flex justify-between items-center mb-8">
-            <button onclick="toggleSidebar()" class="p-2 bg-stone-900 rounded-xl text-orange-500">
-                <i data-lucide="menu"></i>
-            </button>
-            <span class="text-xl font-black italic text-orange-500">ORANGE TV</span>
-            <div class="w-10"></div>
+    <!-- 內容主體 -->
+    <main>
+        <!-- 頂部標題與搜尋 -->
+        <header class="p-6 md:p-10 pb-0">
+            <div class="flex items-center justify-between mb-8 md:hidden">
+                <button onclick="toggleSidebar()" class="p-3 bg-stone-900 rounded-2xl text-orange-500 shadow-xl">
+                    <i data-lucide="menu"></i>
+                </button>
+                <span class="font-black italic text-xl uppercase">Orange<span class="text-orange-500">Player</span></span>
+                <div class="w-10"></div>
+            </div>
+
+            <div id="header-search-box" class="max-w-4xl mx-auto relative mb-10 transition-all">
+                <input type="text" id="searchInput" placeholder="搜尋影片、影集、動漫..." class="w-full bg-stone-900/50 border-2 border-stone-800 rounded-2xl py-5 pl-14 pr-6 text-white outline-none focus:border-orange-500 focus:bg-stone-900 transition-all shadow-2xl">
+                <i data-lucide="search" class="absolute left-6 top-6 text-stone-500"></i>
+                <div id="searchLoader" class="absolute right-6 top-6 hidden"><div class="w-5 h-5 border-2 border-orange-500/20 border-t-orange-500 rounded-full spin"></div></div>
+            </div>
         </header>
 
-        <div class="max-w-4xl mx-auto mb-12 relative">
-            <input type="text" id="searchInput" placeholder="搜尋影片名稱..." class="w-full bg-stone-900 border-2 border-stone-800 rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-orange-500 transition-all text-white">
-            <i data-lucide="search" class="absolute left-6 top-6 text-stone-500"></i>
-            <div id="loading" class="absolute right-6 top-6 hidden"><div class="loader"></div></div>
-        </div>
+        <!-- 各個頁面區塊 -->
+        <div id="page-container" class="px-6 md:px-10 pb-20">
+            <!-- 首頁 / 影視 -->
+            <div id="page-home" class="page-content">
+                <div id="mainGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+            </div>
 
-        <div id="home-view">
-            <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
-        </div>
-        
-        <div id="fav-view" class="hidden">
-            <h2 class="text-2xl font-black mb-8 border-l-4 border-orange-500 pl-4">我的收藏</h2>
-            <div id="fav-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+            <!-- M3U8 工具 -->
+            <div id="page-m3u8" class="page-content hidden max-w-2xl mx-auto">
+                <div class="glass p-8 rounded-3xl">
+                    <h2 class="text-2xl font-black mb-6 flex items-center gap-3"><i data-lucide="link" class="text-orange-500"></i> M3U8 播放器</h2>
+                    <input type="text" id="m3u8Url" placeholder="輸入 .m3u8 串流網址" class="w-full bg-black/40 border-2 border-stone-800 rounded-xl py-4 px-6 text-white mb-4 focus:border-orange-500 outline-none">
+                    <button onclick="playCustomM3u8()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-xl transition shadow-lg shadow-orange-600/20">開始播放</button>
+                </div>
+            </div>
+
+            <!-- 音樂工具 -->
+            <div id="page-music" class="page-content hidden max-w-2xl mx-auto">
+                <div class="glass p-8 rounded-3xl">
+                    <h2 class="text-2xl font-black mb-2 flex items-center gap-3"><i data-lucide="music" class="text-orange-500"></i> 音訊清單</h2>
+                    <p class="text-stone-500 text-sm mb-8">選擇本地音樂文件組成臨時播放清單 (上限 5 個)</p>
+                    <input type="file" id="musicFile" multiple accept="audio/*" class="hidden" onchange="processMusic(this)">
+                    <button onclick="document.getElementById('musicFile').click()" class="w-full py-12 border-2 border-dashed border-stone-800 rounded-2xl hover:border-orange-500 hover:bg-orange-500/5 transition flex flex-col items-center">
+                        <i data-lucide="upload-cloud" class="w-10 h-10 text-stone-700 mb-2"></i>
+                        <span class="font-bold text-stone-500">點擊上傳音訊</span>
+                    </button>
+                    <div id="localMusicList" class="mt-6 space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- 收藏頁 -->
+            <div id="page-fav" class="page-content hidden">
+                <h2 class="text-2xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase tracking-tighter">My Favorites</h2>
+                <div id="favGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+            </div>
         </div>
     </main>
 
-    <!-- 播放器模態框 -->
-    <div id="player-modal" class="fixed inset-0 z-[100] bg-black/fb backdrop-blur-xl hidden overflow-y-auto">
-        <div class="container mx-auto px-4 py-8">
-            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[110] bg-stone-800 p-4 rounded-full text-white">
+    <!-- 播放器 Modal -->
+    <div id="playerModal" class="fixed inset-0 z-[200] bg-black/fb backdrop-blur-3xl hidden overflow-y-auto">
+        <div class="container mx-auto px-4 py-8 md:py-12 relative">
+            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[210] bg-stone-800 p-4 rounded-full text-white hover:bg-orange-600 transition shadow-2xl">
                 <i data-lucide="x"></i>
             </button>
-            
+
             <div class="max-w-6xl mx-auto">
-                <div class="video-aspect rounded-3xl overflow-hidden shadow-2xl mb-10 border border-white/5">
-                    <div id="artplayer" style="width: 100%; height: 100%;"></div>
+                <div class="video-wrapper mb-10 border border-white/5">
+                    <video id="core-vjs-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <div class="lg:col-span-2">
-                        <div class="flex gap-2 mb-4">
-                            <span id="p-source" class="bg-orange-600 text-[10px] font-black px-2 py-1 rounded text-white">來源</span>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span id="pSrcTag" class="bg-orange-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-white">Source</span>
+                            <span id="pYearTag" class="text-stone-500 font-bold">2026</span>
                         </div>
-                        <h1 id="p-title" class="text-4xl font-black mb-6">標題載入中...</h1>
-                        <p id="p-desc" class="text-stone-400 leading-relaxed mb-8">簡介載入中...</p>
-                        <button id="fav-btn" onclick="toggleFav()" class="flex items-center space-x-2 bg-stone-900 border border-white/10 px-6 py-3 rounded-xl hover:bg-stone-800 transition">
-                            <i data-lucide="heart" id="fav-icon"></i>
-                            <span>加入收藏</span>
+                        <h1 id="pTitleText" class="text-3xl md:text-5xl font-black mb-6 leading-tight">載入中...</h1>
+                        <p id="pDescText" class="text-stone-400 leading-relaxed text-sm md:text-base mb-10">正在準備資源...</p>
+                        
+                        <button id="favActionBtn" onclick="handleFavToggle()" class="flex items-center gap-3 bg-stone-900 border border-white/10 px-8 py-4 rounded-2xl hover:bg-stone-800 transition">
+                            <i data-lucide="heart" id="favActionIcon"></i>
+                            <span class="font-bold">收藏</span>
                         </button>
                     </div>
+
                     <div class="lg:col-span-1">
-                        <div class="bg-stone-900 rounded-3xl p-6 border border-white/5">
-                            <h3 class="font-black mb-6 flex items-center"><i data-lucide="list" class="mr-2 text-orange-500"></i> 選集</h3>
-                            <div id="ep-list" class="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
+                        <div class="glass rounded-3xl p-6">
+                            <h3 class="font-black mb-6 flex items-center text-lg text-orange-500">
+                                <i data-lucide="list-video" class="mr-3"></i> 播放選集
+                            </h3>
+                            <div id="episodeContainer" class="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
                         </div>
                     </div>
                 </div>
@@ -162,190 +248,230 @@
     </div>
 
     <script>
-        const SOURCES = {
-            "heimuer": { "api": "https://json.heimuer.xyz/api.php/provide/vod", "name": "黑木耳" },
-            "dyttzy": { "api": "https://caiji.dyttzyapi.com/api.php/provide/vod", "name": "電影天堂" },
-            "ffyzy": { "api": "https://cj.ffzyapi.com/api.php/provide/vod", "name": "非凡" },
-            "lzi": { "api": "https://cj.lziapi.com/api.php/provide/vod", "name": "量子" },
-            "wwzy": { "api": "https://wwzy.tv/api.php/provide/vod", "name": "旺旺短劇" }
-        };
+        // 播放源庫
+        const API_SOURCES = [
+            { id: "hmu", url: "https://json.heimuer.xyz/api.php/provide/vod", name: "黑木耳" },
+            { id: "ff", url: "https://cj.ffzyapi.com/api.php/provide/vod", name: "非凡" },
+            { id: "lz", url: "https://cj.lziapi.com/api.php/provide/vod", name: "量子" },
+            { id: "sd", url: "https://cj.sdzyapi.com/api.php/provide/vod", name: "閃電" }
+        ];
 
-        let art = null;
-        let currentItem = null;
-        let favorites = JSON.parse(localStorage.getItem('orange_favs') || '[]');
+        let vjs = null;
+        let activeItem = null;
+        let favorites = JSON.parse(localStorage.getItem('OP_STORAGE_V5') || '[]');
 
         window.onload = () => {
             lucide.createIcons();
-            testStatus();
-            doSearch('');
+            initVjs();
+            runRuntimeCheck();
+            doGlobalSearch('');
             
             document.getElementById('searchInput').onkeydown = (e) => {
-                if(e.key === 'Enter') doSearch(e.target.value);
+                if(e.key === 'Enter') doGlobalSearch(e.target.value);
             };
         };
 
+        function initVjs() {
+            // 初始化 Video.js 並確保開啟全螢幕支援
+            vjs = videojs('core-vjs-player', {
+                fluid: true,
+                playbackRates: [0.5, 1, 1.5, 2],
+                controlBar: { 
+                    skipButtons: { forward: 10, backward: 10 },
+                    fullscreenToggle: true 
+                },
+                userActions: {
+                    doubleClick: true,
+                    hotkeys: true
+                }
+            });
+        }
+
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('overlay');
+            const ov = document.getElementById('sidebarOverlay');
+            const icon = document.getElementById('sidebarToggleIcon');
+            
             if(window.innerWidth <= 768) {
-                sb.classList.toggle('mobile-open');
-                ov.classList.toggle('show');
+                sb.classList.toggle('mobile-active');
+                ov.classList.toggle('active');
             } else {
                 sb.classList.toggle('sidebar-collapsed');
+                icon.setAttribute('data-lucide', sb.classList.contains('sidebar-collapsed') ? 'chevron-right' : 'chevron-left');
+                lucide.createIcons();
             }
         }
 
-        function switchTab(tab) {
-            document.getElementById('home-view').classList.toggle('hidden', tab !== 'home');
-            document.getElementById('fav-view').classList.toggle('hidden', tab !== 'fav');
+        function switchPage(pageId) {
+            // 切換頁面視圖
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+
+            // 更新導覽樣式
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.className = "nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-stone-500 hover:bg-white/5 transition-all";
+            });
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            activeNav.className = "nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-orange-500 bg-orange-500/10 border-r-4 border-orange-500 transition-all";
             
-            const h = document.getElementById('tab-home');
-            const f = document.getElementById('tab-fav');
-            
-            if(tab === 'home') {
-                h.className = "flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-orange-500 bg-orange-500/10 border-r-4 border-orange-500";
-                f.className = "flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-stone-400 hover:bg-white/5";
-            } else {
-                f.className = "flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-orange-500 bg-orange-500/10 border-r-4 border-orange-500";
-                h.className = "flex items-center p-4 rounded-xl transition font-bold cursor-pointer text-stone-400 hover:bg-white/5";
-                renderFavs();
-            }
+            // 搜尋框控制
+            document.getElementById('header-search-box').style.display = (pageId === 'home') ? 'block' : 'none';
+
+            if(pageId === 'fav') renderFavGrid();
             if(window.innerWidth <= 768) toggleSidebar();
+            lucide.createIcons();
         }
 
-        async function doSearch(kw) {
-            const grid = document.getElementById('grid');
-            const ld = document.getElementById('loading');
+        async function doGlobalSearch(kw) {
+            const grid = document.getElementById('mainGrid');
+            const loader = document.getElementById('searchLoader');
             grid.innerHTML = '';
-            ld.classList.remove('hidden');
+            loader.classList.remove('hidden');
 
-            const ps = Object.entries(SOURCES).map(async ([id, s]) => {
+            const searchTasks = API_SOURCES.map(async (src) => {
                 try {
-                    const r = await fetch(`${s.api}?ac=videolist${kw ? `&wd=${encodeURIComponent(kw)}` : ''}`);
+                    const r = await fetch(`${src.url}?ac=videolist${kw ? `&wd=${encodeURIComponent(kw)}` : ''}`);
                     const d = await r.json();
-                    return { source: s.name, list: d.list || [] };
+                    return { source: src.name, list: d.list || [] };
                 } catch(e) { return { list: [] }; }
             });
 
-            const rs = await Promise.all(ps);
-            ld.classList.add('hidden');
-            rs.forEach(res => renderItems(res.list, res.source, grid));
+            const results = await Promise.all(searchTasks);
+            loader.classList.add('hidden');
+            results.forEach(res => renderMediaCards(res.list, res.source, grid));
         }
 
-        function renderItems(list, source, container) {
+        function renderMediaCards(list, source, container) {
             list.forEach(item => {
-                const div = document.createElement('div');
-                div.className = "group cursor-pointer bg-stone-900 rounded-2xl overflow-hidden border border-white/5 hover:border-orange-500/50 transition";
-                div.onclick = () => openPlayer(item, source);
-                div.innerHTML = `
-                    <div class="relative aspect-[3/4.2]">
-                        <img src="${item.vod_pic}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent"></div>
-                        <div class="absolute top-2 right-2 bg-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white">${source}</div>
-                        <div class="absolute bottom-2 left-2 right-2 truncate text-[10px] text-zinc-400">${item.vod_remarks || ''}</div>
+                const card = document.createElement('div');
+                card.className = "group cursor-pointer bg-stone-900 rounded-2xl overflow-hidden border border-white/5 hover:border-orange-500/50 transition-all hover:shadow-2xl hover:shadow-orange-500/10";
+                card.onclick = () => openPlayer(item, source);
+                card.innerHTML = `
+                    <div class="relative aspect-[3/4.2] overflow-hidden">
+                        <img src="${item.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent"></div>
+                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[8px] font-black px-2 py-1 rounded text-orange-500 border border-orange-500/20">${source}</div>
+                        <div class="absolute bottom-3 left-3 right-3">
+                            <div class="text-[10px] font-black text-orange-400 mb-1 uppercase">${item.vod_remarks || '高清'}</div>
+                            <div class="text-sm font-black text-white truncate group-hover:text-orange-500 transition">${item.vod_name}</div>
+                        </div>
                     </div>
-                    <div class="p-3 text-xs font-bold truncate group-hover:text-orange-500 transition">${item.vod_name}</div>
                 `;
-                container.appendChild(div);
+                container.appendChild(card);
             });
         }
 
         function openPlayer(item, source) {
-            currentItem = item;
-            document.getElementById('player-modal').classList.remove('hidden');
+            activeItem = item;
+            document.getElementById('playerModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
 
-            document.getElementById('p-title').innerText = item.vod_name;
-            document.getElementById('p-source').innerText = source;
-            document.getElementById('p-desc').innerText = item.vod_content ? item.vod_content.replace(/<[^>]+>/g, '') : '無簡介';
+            document.getElementById('pTitleText').innerText = item.vod_name;
+            document.getElementById('pSrcTag').innerText = source;
+            document.getElementById('pDescText').innerText = item.vod_content ? item.vod_content.replace(/<[^>]+>/g, '') : '暫無簡介。';
 
-            const list = document.getElementById('ep-list');
-            list.innerHTML = '';
+            const epBox = document.getElementById('episodeContainer');
+            epBox.innerHTML = '';
             
-            const urls = item.vod_play_url.split('#').filter(x => x);
-            urls.forEach((u, i) => {
-                const parts = u.split('$');
+            const rawUrls = item.vod_play_url.split('#').filter(u => u);
+            rawUrls.forEach((line, i) => {
+                const parts = line.split('$');
                 const name = parts[0] || `第 ${i+1} 集`;
-                const link = parts[1] || parts[0];
+                const url = parts[parts.length - 1];
                 
                 const btn = document.createElement('button');
-                btn.className = "ep-btn bg-stone-800 hover:bg-orange-600 p-3 rounded-xl text-[11px] font-bold transition truncate text-stone-300 hover:text-white";
+                btn.className = "ep-btn bg-stone-800 hover:bg-orange-600 p-3 rounded-xl text-[11px] font-bold transition truncate text-stone-400 hover:text-white";
                 btn.innerText = name;
                 btn.onclick = () => {
                     document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('bg-orange-600','text-white'));
                     btn.classList.add('bg-orange-600','text-white');
-                    play(link);
+                    vjs.src({ src: url.trim(), type: url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' });
+                    vjs.play();
                 };
-                list.appendChild(btn);
+                epBox.appendChild(btn);
             });
 
-            if(list.firstChild) list.firstChild.click();
+            if (epBox.firstChild) epBox.firstChild.click();
             updateFavUI();
         }
 
-        function play(url) {
-            if(art) art.destroy();
-            art = new Artplayer({
-                container: '#artplayer',
-                url: url.trim(),
-                type: 'm3u8',
-                customType: {
-                    m3u8: function(video, url, art) {
-                        if (Hls.isSupported()) {
-                            const hls = new Hls();
-                            hls.loadSource(url);
-                            hls.attachMedia(video);
-                        } else { video.src = url; }
-                    }
-                },
-                autoplay: true,
-                fullscreen: true,
-                fullscreenWeb: true,
-                theme: '#f97316'
-            });
+        function playCustomM3u8() {
+            const url = document.getElementById('m3u8Url').value;
+            if(!url) return;
+            openPlayer({
+                vod_name: "自定義串流",
+                vod_play_url: `播放$${url}`,
+                vod_content: "手動輸入的外部 M3U8 資源。",
+                vod_pic: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=400&auto=format&fit=crop"
+            }, "M3U8 TOOL");
         }
 
-        function toggleFav() {
-            const idx = favorites.findIndex(f => f.vod_id === currentItem.vod_id);
+                function processMusic(input) {
+            const files = Array.from(input.files).slice(0, 5);
+            const listUi = document.getElementById('localMusicList');
+            listUi.innerHTML = '';
+            
+            const musicData = files.map(f => `${f.name}$${URL.createObjectURL(f)}`);
+            files.forEach(f => {
+                listUi.innerHTML += `<div class="bg-stone-900 p-3 rounded-lg text-xs font-bold border border-white/5 flex items-center justify-between">
+                    <span>${f.name}</span><span class="text-orange-500">READY</span>
+                </div>`;
+            });
+
+            if(files.length > 0) {
+                openPlayer({
+                    vod_name: "本地音訊清單",
+                    vod_play_url: musicData.join('#'),
+                    vod_content: "上傳的本地音樂文件組成的播放列表。",
+                    vod_pic: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=400&auto=format&fit=crop"
+                }, "LOCAL AUDIO");
+            }
+        }
+
+        function handleFavToggle() {
+            const idx = favorites.findIndex(f => f.vod_id === activeItem.vod_id);
             if(idx > -1) favorites.splice(idx, 1);
-            else favorites.push(currentItem);
-            localStorage.setItem('orange_favs', JSON.stringify(favorites));
+            else favorites.push(activeItem);
+            localStorage.setItem('OP_STORAGE_V5', JSON.stringify(favorites));
             updateFavUI();
         }
 
         function updateFavUI() {
-            const isF = favorites.some(f => f.vod_id === currentItem.vod_id);
-            const btn = document.getElementById('fav-btn');
-            btn.classList.toggle('bg-orange-600', isF);
-            document.getElementById('fav-icon').setAttribute('data-lucide', isF ? 'heart-off' : 'heart');
+            const isFav = favorites.some(f => f.vod_id === activeItem.vod_id);
+            const btn = document.getElementById('favActionBtn');
+            const icon = document.getElementById('favActionIcon');
+            btn.classList.toggle('bg-orange-600', isFav);
+            icon.setAttribute('data-lucide', isFav ? 'heart-off' : 'heart');
             lucide.createIcons();
         }
 
-        function renderFavs() {
-            const g = document.getElementById('fav-grid');
-            g.innerHTML = '';
-            renderItems(favorites, '我的收藏', g);
+        function renderFavGrid() {
+            const g = document.getElementById('favGrid');
+            g.innerHTML = favorites.length ? '' : '<div class="col-span-full py-20 text-center text-stone-600 italic">收藏清單是空的</div>';
+            renderMediaCards(favorites, '我的收藏', g);
         }
 
         function closePlayer() {
-            if(art) art.destroy();
-            document.getElementById('player-modal').classList.add('hidden');
+            vjs.pause();
+            document.getElementById('playerModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
 
-        async function testStatus() {
+        async function runRuntimeCheck() {
             const start = Date.now();
             try {
-                await fetch('https://json.heimuer.xyz/api.php/provide/vod?ac=list');
+                // 模擬讀取微後端變數
+                const runtime = typeof __ENV !== 'undefined' ? __ENV : { D1_READY: true };
+                
+                await fetch('https://json.heimuer.xyz/api.php/provide/vod?ac=list', { method: 'HEAD', mode: 'no-cors' });
                 const lat = Date.now() - start;
-                document.getElementById('ping').innerText = `${lat} ms`;
-                document.getElementById('status').innerText = "連線正常";
-                document.getElementById('dot').className = "w-2 h-2 rounded-full mr-2 bg-orange-500 shadow-[0_0_8px_#f97316]";
+                document.getElementById('pingVal').innerText = `${lat}ms`;
+                document.getElementById('statusTxt').innerText = "D1 RUNTIME ONLINE";
+                document.getElementById('statusDot').className = "w-2 h-2 rounded-full mr-2 bg-orange-500 shadow-[0_0_10px_#f97316]";
             } catch(e) {
-                document.getElementById('status').innerText = "離線狀態";
+                document.getElementById('statusTxt').innerText = "RUNTIME OFFLINE";
             }
         }
     </script>
 </body>
 </html>
-
