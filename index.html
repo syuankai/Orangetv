@@ -66,7 +66,6 @@
             position: relative;
         }
 
-        /* 修正 Video.js 全螢幕 z-index 問題 */
         .vjs-fullscreen {
             z-index: 9999 !important;
         }
@@ -90,7 +89,6 @@
             .sidebar-overlay.active { display: block; }
         }
 
-        /* 動畫 */
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
@@ -99,10 +97,8 @@
 </head>
 <body>
 
-    <!-- 行動端遮罩 -->
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!-- 側邊欄 -->
     <aside id="sidebar">
         <div class="p-6">
             <div class="flex items-center justify-between mb-8">
@@ -117,7 +113,6 @@
                 </button>
             </div>
 
-            <!-- 狀態卡片 -->
             <div class="status-card glass rounded-2xl p-4 mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] text-stone-500 font-bold uppercase tracking-widest">Runtime 狀態</span>
@@ -150,9 +145,7 @@
         </div>
     </aside>
 
-    <!-- 內容主體 -->
     <main>
-        <!-- 頂部標題與搜尋 -->
         <header class="p-6 md:p-10 pb-0">
             <div class="flex items-center justify-between mb-8 md:hidden">
                 <button onclick="toggleSidebar()" class="p-3 bg-stone-900 rounded-2xl text-orange-500 shadow-xl">
@@ -169,14 +162,25 @@
             </div>
         </header>
 
-        <!-- 各個頁面區塊 -->
         <div id="page-container" class="px-6 md:px-10 pb-20">
-            <!-- 首頁 / 影視 -->
             <div id="page-home" class="page-content">
-                <div id="mainGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+                <!-- 豆瓣推薦區域 -->
+                <div id="recommendSection" class="mb-10">
+                    <h2 class="text-xl font-black mb-6 flex items-center gap-2 text-orange-500">
+                        <i data-lucide="sparkles"></i> 豆瓣今日推薦
+                    </h2>
+                    <div id="recommendGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 opacity-0 transition-opacity duration-1000"></div>
+                </div>
+
+                <!-- 搜尋結果區域 -->
+                <div id="searchSection" class="hidden">
+                    <h2 id="searchTitle" class="text-xl font-black mb-6 flex items-center gap-2 text-stone-400 uppercase">
+                        <i data-lucide="search"></i> 搜尋結果
+                    </h2>
+                    <div id="mainGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
+                </div>
             </div>
 
-            <!-- M3U8 工具 -->
             <div id="page-m3u8" class="page-content hidden max-w-2xl mx-auto">
                 <div class="glass p-8 rounded-3xl">
                     <h2 class="text-2xl font-black mb-6 flex items-center gap-3"><i data-lucide="link" class="text-orange-500"></i> M3U8 播放器</h2>
@@ -185,7 +189,6 @@
                 </div>
             </div>
 
-            <!-- 音樂工具 -->
             <div id="page-music" class="page-content hidden max-w-2xl mx-auto">
                 <div class="glass p-8 rounded-3xl">
                     <h2 class="text-2xl font-black mb-2 flex items-center gap-3"><i data-lucide="music" class="text-orange-500"></i> 音訊清單</h2>
@@ -199,7 +202,6 @@
                 </div>
             </div>
 
-            <!-- 收藏頁 -->
             <div id="page-fav" class="page-content hidden">
                 <h2 class="text-2xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase tracking-tighter">My Favorites</h2>
                 <div id="favGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
@@ -207,7 +209,6 @@
         </div>
     </main>
 
-    <!-- 播放器 Modal -->
     <div id="playerModal" class="fixed inset-0 z-[200] bg-black/fb backdrop-blur-3xl hidden overflow-y-auto">
         <div class="container mx-auto px-4 py-8 md:py-12 relative">
             <button onclick="closePlayer()" class="fixed top-6 right-6 z-[210] bg-stone-800 p-4 rounded-full text-white hover:bg-orange-600 transition shadow-2xl">
@@ -248,7 +249,6 @@
     </div>
 
     <script>
-        // 播放源庫
         const API_SOURCES = [
             { id: "hmu", url: "https://json.heimuer.xyz/api.php/provide/vod", name: "黑木耳" },
             { id: "ff", url: "https://cj.ffzyapi.com/api.php/provide/vod", name: "非凡" },
@@ -264,15 +264,23 @@
             lucide.createIcons();
             initVjs();
             runRuntimeCheck();
-            doGlobalSearch('');
+            loadDoubanRecommendations(); // 載入豆瓣推薦
             
             document.getElementById('searchInput').onkeydown = (e) => {
-                if(e.key === 'Enter') doGlobalSearch(e.target.value);
+                if(e.key === 'Enter') {
+                    const kw = e.target.value;
+                    if(kw.trim() !== '') {
+                        doGlobalSearch(kw);
+                    } else {
+                        // 如果搜尋清空，回到推薦模式
+                        document.getElementById('recommendSection').classList.remove('hidden');
+                        document.getElementById('searchSection').classList.add('hidden');
+                    }
+                }
             };
         };
 
         function initVjs() {
-            // 初始化 Video.js 並確保開啟全螢幕支援
             vjs = videojs('core-vjs-player', {
                 fluid: true,
                 playbackRates: [0.5, 1, 1.5, 2],
@@ -280,11 +288,35 @@
                     skipButtons: { forward: 10, backward: 10 },
                     fullscreenToggle: true 
                 },
-                userActions: {
-                    doubleClick: true,
-                    hotkeys: true
-                }
+                userActions: { doubleClick: true, hotkeys: true }
             });
+        }
+
+        // 豆瓣推薦載入邏輯
+        async function loadDoubanRecommendations() {
+            const grid = document.getElementById('recommendGrid');
+            try {
+                // 使用豆瓣熱門開源 API (Frodo 或第三方鏡像)
+                const resp = await fetch('https://api.wmdb.tv/api/v1/top?type=Douban&skip=0&limit=12&lang=Cn');
+                const data = await resp.json();
+                
+                grid.innerHTML = '';
+                data.forEach(movie => {
+                    const item = {
+                        vod_name: movie.data[0].name,
+                        vod_pic: movie.data[0].poster,
+                        vod_remarks: `${movie.doubanRating || 'N/A'} 分`,
+                        vod_content: movie.data[0].description,
+                        // 因為豆瓣 API 沒提供播放地址，點擊後觸發自動搜尋
+                        is_rec: true 
+                    };
+                    renderMediaCards([item], '豆瓣熱門', grid);
+                });
+                grid.classList.remove('opacity-0');
+            } catch (e) {
+                console.error("豆瓣推薦載入失敗", e);
+                grid.innerHTML = '<div class="col-span-full text-stone-600 text-xs">暫時無法載入推薦內容</div>';
+            }
         }
 
         function toggleSidebar() {
@@ -303,18 +335,15 @@
         }
 
         function switchPage(pageId) {
-            // 切換頁面視圖
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
             document.getElementById(`page-${pageId}`).classList.remove('hidden');
 
-            // 更新導覽樣式
             document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.className = "nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-stone-500 hover:bg-white/5 transition-all";
             });
             const activeNav = document.getElementById(`nav-${pageId}`);
             activeNav.className = "nav-item flex items-center p-4 rounded-xl cursor-pointer font-bold text-orange-500 bg-orange-500/10 border-r-4 border-orange-500 transition-all";
             
-            // 搜尋框控制
             document.getElementById('header-search-box').style.display = (pageId === 'home') ? 'block' : 'none';
 
             if(pageId === 'fav') renderFavGrid();
@@ -323,6 +352,10 @@
         }
 
         async function doGlobalSearch(kw) {
+            // 切換首頁視圖：隱藏推薦，顯示搜尋結果
+            document.getElementById('recommendSection').classList.add('hidden');
+            document.getElementById('searchSection').classList.remove('hidden');
+
             const grid = document.getElementById('mainGrid');
             const loader = document.getElementById('searchLoader');
             grid.innerHTML = '';
@@ -338,19 +371,38 @@
 
             const results = await Promise.all(searchTasks);
             loader.classList.add('hidden');
-            results.forEach(res => renderMediaCards(res.list, res.source, grid));
+            
+            let hasResults = false;
+            results.forEach(res => {
+                if(res.list.length > 0) hasResults = true;
+                renderMediaCards(res.list, res.source, grid);
+            });
+
+            if(!hasResults) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-stone-600 italic">查無資源，請嘗試縮短關鍵字</div>';
+            }
         }
 
         function renderMediaCards(list, source, container) {
             list.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "group cursor-pointer bg-stone-900 rounded-2xl overflow-hidden border border-white/5 hover:border-orange-500/50 transition-all hover:shadow-2xl hover:shadow-orange-500/10";
-                card.onclick = () => openPlayer(item, source);
+                
+                // 如果是推薦位且沒有播放源，點擊後觸發自動搜尋
+                card.onclick = () => {
+                    if(item.is_rec) {
+                        document.getElementById('searchInput').value = item.vod_name;
+                        doGlobalSearch(item.vod_name);
+                    } else {
+                        openPlayer(item, source);
+                    }
+                };
+
                 card.innerHTML = `
                     <div class="relative aspect-[3/4.2] overflow-hidden">
                         <img src="${item.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent"></div>
-                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[8px] font-black px-2 py-1 rounded text-orange-500 border border-orange-500/20">${source}</div>
+                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[8px] font-blaack px-2 py-1 rounded text-orange-500 border border-orange-500/20">${source}</div>
                         <div class="absolute bottom-3 left-3 right-3">
                             <div class="text-[10px] font-black text-orange-400 mb-1 uppercase">${item.vod_remarks || '高清'}</div>
                             <div class="text-sm font-black text-white truncate group-hover:text-orange-500 transition">${item.vod_name}</div>
@@ -406,7 +458,7 @@
             }, "M3U8 TOOL");
         }
 
-                function processMusic(input) {
+        function processMusic(input) {
             const files = Array.from(input.files).slice(0, 5);
             const listUi = document.getElementById('localMusicList');
             listUi.innerHTML = '';
@@ -460,9 +512,7 @@
         async function runRuntimeCheck() {
             const start = Date.now();
             try {
-                // 模擬讀取微後端變數
                 const runtime = typeof __ENV !== 'undefined' ? __ENV : { D1_READY: true };
-                
                 await fetch('https://json.heimuer.xyz/api.php/provide/vod?ac=list', { method: 'HEAD', mode: 'no-cors' });
                 const lat = Date.now() - start;
                 document.getElementById('pingVal').innerText = `${lat}ms`;
