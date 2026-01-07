@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrangePlayer - Pro Media Hub</title>
+    <title>OrangePlayer - Discovery Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        :root { --primary: #f97316; --bg: #050505; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary: #f97316; --bg-dark: #050505; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg-dark); color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         #sidebar { width: 260px; background: #0a0a0a; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
         @media (max-width: 768px) { #sidebar { position: fixed; left: -260px; top: 0; bottom: 0; } #sidebar.active { transform: translateX(260px); } }
@@ -19,40 +19,45 @@
         .nav-item { transition: 0.2s; cursor: pointer; color: #71717a; border-radius: 12px; margin-bottom: 4px; }
         .nav-item:hover, .nav-item.active { color: var(--primary); background: rgba(249, 115, 22, 0.1); }
 
-        main { flex: 1; overflow-y: auto; scroll-behavior: smooth; position: relative; }
-        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        main { flex: 1; overflow-y: auto; scroll-behavior: smooth; background: var(--bg-dark); position: relative; }
+        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
         
-        .vod-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .vod-card:hover { transform: translateY(-5px); }
+        .vod-card { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; position: relative; }
+        .vod-card:hover { transform: translateY(-8px); }
         
-        /* 播放器半透明效果 */
+        /* 播放器半透明 Modal */
         #modal-player { 
             position: fixed; inset: 0; z-index: 300; display: none; 
-            background: rgba(5, 5, 5, 0.75); backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            overflow-y: auto; 
         }
         #modal-player.active { display: block; }
-        .video-wrapper { aspect-ratio: 16/9; background: #000; border-radius: 1.5rem; overflow: hidden; border: 1px solid #333; }
+        .video-shell { aspect-ratio: 16/9; background: #000; border-radius: 1.5rem; overflow: hidden; border: 1px solid #222; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         
         /* 密碼鎖定層 */
         #auth-overlay { position: fixed; inset: 0; z-index: 500; background: #050505; display: flex; align-items: center; justify-content: center; }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 90; display: none; }
         #overlay.active { display: block; }
+
+        .btn-action { transition: 0.2s; }
+        .btn-action:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
     <!-- 密碼輸入框 -->
     <div id="auth-overlay" class="hidden">
-        <div class="glass p-10 rounded-[2.5rem] w-full max-w-sm text-center">
-            <div class="bg-orange-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg">
-                <i data-lucide="lock" class="w-8 h-8"></i>
+        <div class="glass p-10 rounded-[2.5rem] w-full max-w-sm text-center border-orange-500/30">
+            <div class="bg-orange-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg shadow-orange-500/40">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
             </div>
             <h2 class="text-2xl font-black mb-2 tracking-tighter uppercase">Orange Access</h2>
-            <p class="text-zinc-500 text-xs mb-8">此站點受密碼保護</p>
-            <input type="password" id="passInput" placeholder="輸入訪問密碼" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center outline-none focus:border-orange-500 mb-4 transition-all">
-            <button onclick="verifyAccess()" class="w-full bg-orange-600 hover:bg-orange-500 py-4 rounded-xl font-bold transition-all">解鎖進入</button>
+            <p class="text-zinc-500 text-xs mb-8">此站點受環境變數密碼保護</p>
+            <input type="password" id="passInput" placeholder="請輸入訪問密碼" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center outline-none focus:border-orange-500 mb-4 transition-all text-orange-500 font-mono">
+            <button onclick="verifyAccess()" class="w-full bg-orange-600 hover:bg-orange-500 py-4 rounded-xl font-bold transition-all shadow-lg shadow-orange-600/20">驗證並進入</button>
+            <p id="auth-error" class="text-red-500 text-[10px] mt-4 opacity-0 transition-opacity font-bold">密碼錯誤，請重試</p>
         </div>
     </div>
 
@@ -60,6 +65,7 @@
 
     <aside id="sidebar">
         <div class="p-6">
+            <!-- 品牌標識 -->
             <div class="flex items-center gap-3 mb-10 select-none">
                 <div class="bg-orange-500 p-2.5 rounded-xl text-white shadow-lg shadow-orange-500/40">
                     <i data-lucide="play" class="w-5 h-5 fill-current"></i>
@@ -69,13 +75,13 @@
 
             <nav class="space-y-1">
                 <div onclick="showPage('home', true)" id="nav-home" class="nav-item active flex items-center p-4 font-bold">
-                    <i data-lucide="layout-dashboard"></i><span class="ml-4">今日發現</span>
+                    <i data-lucide="layout-grid"></i><span class="ml-4">今日發現</span>
                 </div>
                 <div onclick="showPage('m3u8', true)" id="nav-m3u8" class="nav-item flex items-center p-4 font-bold">
                     <i data-lucide="zap"></i><span class="ml-4">M3U8 解析</span>
                 </div>
                 <div onclick="showPage('music', true)" id="nav-music" class="nav-item flex items-center p-4 font-bold">
-                    <i data-lucide="music-2"></i><span class="ml-4">本地歌單</span>
+                    <i data-lucide="music"></i><span class="ml-4">本地歌單</span>
                 </div>
                 <div onclick="showPage('fav', true)" id="nav-fav" class="nav-item flex items-center p-4 font-bold">
                     <i data-lucide="bookmark"></i><span class="ml-4">我的儲存</span>
@@ -88,13 +94,11 @@
         
         <div class="mt-auto p-6">
             <div class="glass p-4 rounded-2xl border-orange-500/10">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-[10px] font-black text-zinc-500 uppercase">Cloud D1 Sync</span>
-                    <span id="ping-val" class="text-[10px] font-mono text-orange-500">--ms</span>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                    <span class="text-[10px] font-black text-zinc-500 uppercase">D1 Cloud Sync</span>
                 </div>
-                <div class="h-0.5 bg-zinc-800 rounded-full overflow-hidden">
-                    <div id="ping-bar" class="h-full bg-orange-500 transition-all duration-700" style="width: 0%"></div>
-                </div>
+                <p id="d1-status" class="text-[9px] font-mono text-zinc-500 uppercase tracking-tighter">LATENCY: -- MS</p>
             </div>
         </div>
     </aside>
@@ -104,41 +108,42 @@
             <div class="max-w-6xl mx-auto flex items-center gap-4">
                 <button onclick="toggleSidebar(true)" class="md:hidden p-3 bg-zinc-900 rounded-xl"><i data-lucide="menu"></i></button>
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="搜尋 25+ 播放源 (保持搜尋邏輯)..." class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-12 focus:border-orange-500 outline-none transition-all">
+                    <input type="text" id="searchInput" placeholder="搜尋 25+ 資源站..." class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-12 focus:border-orange-500 outline-none transition-all">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"></i>
                 </div>
             </div>
         </header>
 
         <div class="px-6 md:px-10 pb-20">
-            <div id="page-home" class="page-sec">
-                <div class="flex items-center justify-between mb-8 pt-4">
-                    <h2 id="home-title" class="text-xl font-black border-l-4 border-orange-500 pl-4 uppercase">正在為您挑選內容...</h2>
-                    <button onclick="shuffleHome()" class="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-xl text-sm font-bold border border-white/5 transition-all active:scale-95">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> 換一批
+            <!-- 推薦頁面 -->
+            <div id="page-home" class="page-sec pt-4">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 id="home-title" class="text-xl font-black border-l-4 border-orange-500 pl-4 uppercase">正在挑選推薦...</h2>
+                    <button id="btn-shuffle" onclick="shuffleHome()" class="btn-action flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 px-5 py-2.5 rounded-xl text-sm font-bold border border-white/5">
+                        <i data-lucide="refresh-ccw" class="w-4 h-4"></i> 換一批
                     </button>
                 </div>
                 <div id="grid-home" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
             </div>
 
-            <!-- 其他頁面 -->
+            <!-- 其他功能頁面保持邏輯不動 -->
             <div id="page-m3u8" class="page-sec hidden max-w-2xl mx-auto pt-10">
                 <div class="glass p-12 rounded-[2.5rem] text-center border-orange-500/20">
-                    <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter italic text-orange-500">M3U8 Parser</h2>
-                    <input type="text" id="m3u-input" placeholder="貼上 HLS 串流連結" class="w-full bg-black/40 border border-zinc-800 rounded-xl p-5 mb-6 text-center outline-none focus:border-orange-500 font-mono">
-                    <button onclick="playM3u8()" class="w-full bg-orange-600 py-5 rounded-xl font-black shadow-lg">啟動播放器</button>
+                    <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter italic text-orange-500">M3U8 解析器</h2>
+                    <input type="text" id="m3u-url" placeholder="輸入 .m3u8 網址" class="w-full bg-black/40 border border-zinc-800 rounded-xl p-5 mb-6 text-center outline-none focus:border-orange-500 font-mono">
+                    <button onclick="playM3u8()" class="w-full bg-orange-600 py-5 rounded-xl font-black shadow-lg">啟動播放</button>
                 </div>
             </div>
 
             <div id="page-music" class="page-sec hidden max-w-2xl mx-auto pt-10">
                 <div class="glass p-10 rounded-[2.5rem]">
-                    <h2 class="text-xl font-black mb-8">本地音訊清單</h2>
-                    <input type="file" id="music-file" multiple accept="audio/*" class="hidden" onchange="loadMusic(this)">
-                    <button onclick="document.getElementById('music-file').click()" class="w-full py-20 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center hover:border-orange-500 transition-all">
-                        <i data-lucide="upload-cloud" class="w-10 h-10 mb-4 text-zinc-700"></i>
-                        <span class="text-zinc-500 font-bold tracking-widest uppercase">載入本地資源</span>
+                    <h2 class="text-xl font-black mb-8">本地音軌</h2>
+                    <input type="file" id="music-upload" multiple accept="audio/*" class="hidden" onchange="handleMusicFiles(this)">
+                    <button onclick="document.getElementById('music-upload').click()" class="w-full py-20 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center hover:border-orange-500 transition-all">
+                        <i data-lucide="music-4" class="w-12 h-12 mb-4 text-zinc-700"></i>
+                        <span class="text-zinc-500 font-bold">匯入音樂檔案</span>
                     </button>
-                    <div id="music-list" class="mt-8 space-y-2"></div>
+                    <div id="local-music-list" class="mt-8 space-y-2"></div>
                 </div>
             </div>
 
@@ -147,36 +152,36 @@
         </div>
     </main>
 
-    <!-- 播放器 Modal (半透明效果) -->
+    <!-- 播放器 Modal -->
     <div id="modal-player">
         <div class="max-w-6xl mx-auto px-4 py-10 relative">
-            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[310] bg-zinc-800/80 p-4 rounded-full hover:bg-orange-600 transition backdrop-blur-md"><i data-lucide="x"></i></button>
+            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[310] bg-zinc-800/80 p-4 rounded-full hover:bg-orange-600 transition shadow-2xl backdrop-blur-md"><i data-lucide="x"></i></button>
             
-            <div class="video-wrapper mb-8">
-                <video id="v-core" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video>
+            <div class="video-shell mb-8">
+                <video id="video-core" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video>
             </div>
 
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div>
-                    <h1 id="v-name" class="text-3xl font-black mb-2 tracking-tight">載入中...</h1>
+                <div class="flex-1">
+                    <h1 id="v-title" class="text-3xl font-black mb-2 tracking-tight">正在載入...</h1>
                     <div class="flex items-center gap-3">
-                        <span id="v-tag" class="text-[10px] bg-orange-600 px-3 py-1 rounded-md font-black uppercase">解析源</span>
-                        <span id="v-ping" class="text-[10px] bg-white/10 px-3 py-1 rounded-md font-black uppercase text-zinc-300">PING: --ms</span>
+                        <span id="v-from" class="text-[10px] bg-orange-600 px-3 py-1 rounded-md font-black uppercase tracking-widest">CLOUD SYNC</span>
+                        <span id="v-latency" class="text-[10px] bg-white/5 px-3 py-1 rounded-md font-black uppercase text-zinc-400">PING: -- MS</span>
                     </div>
                 </div>
-                <button onclick="toggleFav()" id="v-fav-btn" class="flex items-center gap-3 bg-zinc-900 border border-white/10 px-8 py-4 rounded-2xl hover:bg-orange-600 transition-all font-bold">
-                    <i data-lucide="bookmark" id="v-fav-icon"></i> <span id="v-fav-txt">儲存到 D1</span>
+                <button onclick="toggleFavorite()" id="btn-fav" class="flex items-center gap-3 bg-zinc-900 border border-white/10 px-8 py-4 rounded-2xl hover:bg-orange-600 transition-all font-bold">
+                    <i data-lucide="bookmark" id="icon-fav"></i> <span id="text-fav">儲存到 D1</span>
                 </button>
             </div>
 
-            <div class="mb-6 border-b border-white/5 pb-2"><h3 class="text-zinc-500 font-black uppercase text-xs tracking-widest">選集 EPISODES</h3></div>
-            <div id="v-eps" class="glass p-6 md:p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 rounded-[2.5rem]"></div>
+            <div class="mb-6 border-b border-white/5 pb-2"><h3 class="text-zinc-500 font-black uppercase text-[10px] tracking-widest">分集選單 EPISODES</h3></div>
+            <div id="v-episodes" class="glass p-6 md:p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 rounded-[2rem]"></div>
         </div>
     </div>
 
     <script>
-        const API = '/api/env';
-        let player = null, activeItem = null, store = { fav: [], history: [] }, userToken = localStorage.getItem('orange_token') || "";
+        const API_ENDPOINT = '/api/env';
+        let player = null, currentItem = null, appData = { fav: [], history: [] }, userToken = localStorage.getItem('orange_token') || "";
 
         const SOURCES = [
             { name: "量子資源", url: "https://cj.lziapi.com/api.php/provide/vod/at/json" },
@@ -188,63 +193,84 @@
 
         window.onload = async () => {
             lucide.createIcons();
-            player = videojs('v-core', { fluid: true, playbackRates: [0.5, 1, 1.5, 2] });
+            player = videojs('video-core', { fluid: true, playbackRates: [0.5, 1, 1.25, 1.5, 2] });
+            
             await initSession();
             
             document.getElementById('searchInput').onkeydown = (e) => {
-                if(e.key === 'Enter') searchAll(e.target.value);
+                if(e.key === 'Enter') performSearch(e.target.value);
             };
         };
 
+        // 初始化會話與密碼檢查
         async function initSession() {
             const start = Date.now();
             try {
-                const r = await fetch(API, { headers: { "Authorization": userToken } });
-                const res = await r.json();
-                
-                if (res.needPassword) {
+                // 發送一個測試請求來檢查是否需要密碼
+                const res = await fetch(API_ENDPOINT, {
+                    headers: { 'Authorization': userToken }
+                });
+                const json = await res.json();
+
+                if (res.status === 401 && json.needPassword) {
                     document.getElementById('auth-overlay').classList.remove('hidden');
                     return;
                 }
 
-                document.getElementById('ping-val').innerText = `${Date.now() - start}ms`;
-                document.getElementById('ping-bar').style.width = '100%';
-
-                if(res.data) {
-                    store = res.data;
-                    renderGrid(store.fav, 'grid-fav');
-                    renderGrid(store.history, 'grid-history');
+                document.getElementById('d1-status').innerText = `LATENCY: ${Date.now() - start} MS`;
+                
+                if(json.data) {
+                    appData = json.data;
+                    renderGrid(appData.fav, 'grid-fav');
+                    renderGrid(appData.history, 'grid-history');
                 }
-                shuffleHome();
+                shuffleHome(); // 驗證通過後載入隨機電影
             } catch(e) {
-                console.error("Auth Fail", e);
+                console.error("Session Init Error", e);
+                // 如果是 D1 Missing 等錯誤，仍然嘗試載入首頁
+                shuffleHome();
             }
         }
 
+        // 驗證密碼
         async function verifyAccess() {
             const pw = document.getElementById('passInput').value;
-            const r = await fetch(API, { method: 'POST', body: JSON.stringify({ token: pw, action: 'check' }) });
-            if (r.ok) {
-                localStorage.setItem('orange_token', pw);
-                userToken = pw;
-                document.getElementById('auth-overlay').classList.add('hidden');
-                initSession();
-            } else {
+            const errEl = document.getElementById('auth-error');
+            
+            try {
+                const res = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: pw, action: 'check' })
+                });
+
+                if (res.ok) {
+                    localStorage.setItem('orange_token', pw);
+                    userToken = pw;
+                    document.getElementById('auth-overlay').classList.add('hidden');
+                    initSession();
+                } else {
+                    throw new Error("Invalid");
+                }
+            } catch(e) {
+                errEl.style.opacity = "1";
                 const input = document.getElementById('passInput');
                 input.classList.add('border-red-500');
-                setTimeout(() => input.classList.remove('border-red-500'), 1000);
+                setTimeout(() => {
+                    errEl.style.opacity = "0";
+                    input.classList.remove('border-red-500');
+                }, 2000);
             }
         }
 
-        // 隨機電影修復：並行抓取確保內容充足
+        // 隨機電影推薦修復：並行抓取確保內容充足
         async function shuffleHome() {
             showPage('home', false);
             const grid = document.getElementById('grid-home');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-black animate-pulse uppercase tracking-widest">隨機同步中...</p></div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-bold uppercase tracking-widest animate-pulse">正在生成隨機推薦...</p></div>';
             
-            // 隨機選取 3 個來源站獲取最新內容
-            const selected = SOURCES.sort(() => 0.5 - Math.random()).slice(0, 3);
-            const tasks = selected.map(async (s) => {
+            const selectedSources = SOURCES.sort(() => 0.5 - Math.random()).slice(0, 3);
+            const tasks = selectedSources.map(async (s) => {
                 try {
                     const r = await fetch(s.url);
                     const d = await r.json();
@@ -256,19 +282,18 @@
             let pool = [];
             results.forEach(res => { if(res.status === 'fulfilled') pool = [...pool, ...res.value]; });
 
-            // 隨機打亂
-            const final = pool.sort(() => 0.5 - Math.random()).slice(0, 18);
-            renderGrid(final, 'grid-home');
-            document.getElementById('home-title').innerText = "今日精選推薦";
+            const shuffled = pool.sort(() => 0.5 - Math.random()).slice(0, 18);
+            renderGrid(shuffled, 'grid-home');
+            document.getElementById('home-title').innerText = "今日熱門推薦";
         }
 
-        // 保持原搜尋邏輯
-        async function searchAll(kw) {
+        // 保持搜尋邏輯
+        async function performSearch(kw) {
             if(!kw) return;
             showPage('home', false);
             document.getElementById('home-title').innerText = `搜尋結果: ${kw}`;
             const grid = document.getElementById('grid-home');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-bold">檢索 25+ 播放源中...</p></div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-black animate-pulse uppercase">Orange 聚合引擎檢索中...</p></div>';
 
             const tasks = SOURCES.map(async (s) => {
                 try {
@@ -284,135 +309,157 @@
 
             const unique = [];
             const seen = new Set();
-            combined.forEach(v => { if(!seen.has(v.vod_name)) { seen.add(v.vod_name); unique.push(v); } });
+            combined.forEach(item => {
+                if(!seen.has(item.vod_name)) {
+                    seen.add(item.vod_name);
+                    unique.push(item);
+                }
+            });
 
             renderGrid(unique, 'grid-home');
         }
 
-        function renderGrid(data, id) {
-            const c = document.getElementById(id);
-            c.innerHTML = '';
-            if(!data.length) { c.innerHTML = '<div class="col-span-full py-10 text-center text-zinc-600 font-black uppercase">Empty Data</div>'; return; }
-            
+        function renderGrid(data, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if(!data || data.length === 0) {
+                container.innerHTML = '<div class="col-span-full py-10 text-center text-zinc-600 font-black uppercase tracking-widest">出問題了：D</div>';
+                return;
+            }
             data.forEach(v => {
-                const el = document.createElement('div');
-                el.className = "vod-card group";
-                el.onclick = () => openPlayer(v);
-                el.innerHTML = `
+                const card = document.createElement('div');
+                card.className = "vod-card group";
+                card.onclick = () => launchPlayer(v);
+                card.innerHTML = `
                     <div class="aspect-[3/4.2] rounded-2xl overflow-hidden mb-3 relative bg-zinc-900 border border-white/5">
-                        <img src="${v.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://via.placeholder.com/300x420?text=Orange'">
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] font-black uppercase">
-                            <span class="bg-orange-600 px-2 py-0.5 rounded-lg shadow-lg">${v.vod_remarks || 'HD'}</span>
-                            <span class="bg-black/80 px-2 py-0.5 rounded-lg border border-white/10 text-zinc-400">${v._from || 'Vod'}</span>
+                        <img src="${v.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://via.placeholder.com/300x420?text=OrangePlayer'">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <span class="bg-orange-600 text-[9px] px-2 py-0.5 rounded-lg font-black uppercase shadow-lg">${v.vod_remarks || 'HD'}</span>
+                            <span class="bg-black/80 text-[8px] px-2 py-0.5 rounded-lg font-bold border border-white/10 text-zinc-400">${v._from || 'Vod'}</span>
                         </div>
                     </div>
                     <div class="text-[12px] font-black truncate px-1 group-hover:text-orange-500 transition-colors">${v.vod_name}</div>
                 `;
-                c.appendChild(el);
+                container.appendChild(card);
             });
         }
 
-        function openPlayer(v) {
-            activeItem = v;
+        function launchPlayer(v) {
+            currentItem = v;
             document.getElementById('modal-player').classList.add('active');
-            document.getElementById('v-name').innerText = v.vod_name;
-            document.getElementById('v-tag').innerText = v._from || 'ORANGE_CLOUD';
+            document.getElementById('v-title').innerText = v.vod_name;
+            document.getElementById('v-from').innerText = v._from || 'ORANGE_VOD';
             
-            const raw = v.vod_play_url || "";
+            const rawUrl = v.vod_play_url || "";
             let eps = [];
-            if(raw.includes('#')) eps = raw.split('#').map(l => l.split('$'));
-            else if(raw.includes('$')) eps = [raw.split('$')];
-            else eps = [['立即播放', raw]];
+            if(rawUrl.includes('#')) eps = rawUrl.split('#').map(line => line.split('$'));
+            else if(rawUrl.includes('$')) eps = [rawUrl.splt('$')];
+            else eps = [['立即播放', rawUrl]];
 
-            const epBox = document.getElementById('v-eps');
+            const epBox = document.getElementById('v-episodes');
             epBox.innerHTML = '';
-            eps.forEach((p, i) => {
-                const name = p[0] || `EP${i+1}`;
-                const url = p[p.length - 1];
+            eps.forEach((parts, i) => {
+                const name = parts[0] || `EP ${i+1}`;
+                const url = parts[parts.length - 1];
                 if(!url) return;
+
                 const btn = document.createElement('button');
                 btn.className = "bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-bold hover:bg-orange-600 transition truncate text-zinc-400 hover:text-white backdrop-blur-md";
                 btn.innerText = name;
                 btn.onclick = () => {
-                    document.querySelectorAll('#v-eps button').forEach(b => b.classList.remove('bg-orange-600', 'text-white'));
+                    document.querySelectorAll('#v-episodes button').forEach(b => b.classList.remove('bg-orange-600', 'text-white'));
                     btn.classList.add('bg-orange-600', 'text-white');
-                    const isM3u = url.includes('.m3u8');
-                    player.src({ src: url, type: isM3u ? 'application/x-mpegURL' : 'video/mp4' });
+                    const isHls = url.includes('.m3u8');
+                    player.src({ src: url, type: isHls ? 'application/x-mpegURL' : 'video/mp4' });
                     player.play();
-                    addHistory(v);
-                    testLatency(url);
+                    
+                    updateHistory(v);
+                    measurePing(url);
                 };
                 epBox.appendChild(btn);
             });
+
             if(epBox.firstChild) epBox.firstChild.click();
-            updateFavUI();
+            refreshFavBtn();
             lucide.createIcons();
         }
 
-        async function testLatency(url) {
+        async function measurePing(url) {
             const start = Date.now();
             try {
                 await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                document.getElementById('v-ping').innerText = `PING: ${Date.now() - start}ms`;
-            } catch(e) { document.getElementById('v-ping').innerText = "PING: ERROR"; }
+                document.getElementById('v-latency').innerText = `PING: ${Date.now() - start} MS`;
+            } catch(e) {
+                document.getElementById('v-latency').innerText = "PING: -- MS";
+            }
         }
 
-        function toggleFav() {
-            if(!activeItem) return;
-            const idx = store.fav.findIndex(x => x.vod_name === activeItem.vod_name);
-            if(idx > -1) store.fav.splice(idx, 1);
-            else store.fav.unshift(activeItem);
-            syncD1('save', store.fav);
-            renderGrid(store.fav, 'grid-fav');
-            updateFavUI();
+        async function syncToD1(action, payload) {
+            try {
+                await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': userToken 
+                    },
+                    body: JSON.stringify({ action, payload })
+                });
+            } catch(e) {}
         }
 
-        function addHistory(v) {
-            store.history = store.history.filter(x => x.vod_name !== v.vod_name);
-            store.history.unshift(v);
-            if(store.history.length > 50) store.history.pop();
-            syncD1('history', store.history);
-            renderGrid(store.history, 'grid-history');
+        function toggleFavorite() {
+            if(!currentItem) return;
+            const idx = appData.fav.findIndex(x => x.vod_name === currentItem.vod_name);
+            if(idx > -1) appData.fav.splice(idx, 1);
+            else appData.fav.unshift(currentItem);
+            syncToD1('save', appData.fav);
+            renderGrid(appData.fav, 'grid-fav');
+            refreshFavBtn();
         }
 
-        async function syncD1(action, payload) {
-            await fetch(API, { 
-                method: 'POST', 
-                headers: { "Authorization": userToken },
-                body: JSON.stringify({ action, payload, token: userToken }) 
-            });
+        function updateHistory(v) {
+            appData.history = appData.history.filter(x => x.vod_name !== v.vod_name);
+            appData.history.unshift(v);
+            if(appData.history.length > 50) appData.history.pop();
+            syncToD1('history', appData.history);
+            renderGrid(appData.history, 'grid-history');
         }
 
-        function updateFavUI() {
-            const isFav = activeItem && store.fav.some(x => x.vod_name === activeItem.vod_name);
-            const btn = document.getElementById('v-fav-btn');
+        function refreshFavBtn() {
+            const isFav = currentItem && appData.fav.some(x => x.vod_name === currentItem.vod_name);
+            const btn = document.getElementById('btn-fav');
             btn.classList.toggle('bg-orange-600', isFav);
-            document.getElementById('v-fav-txt').innerText = isFav ? '已儲存' : '儲存到 D1';
-            document.getElementById('v-fav-icon').setAttribute('data-lucide', isFav ? 'heart-off' : 'bookmark');
+            document.getElementById('text-fav').innerText = isFav ? '已儲存' : '儲存到 D1';
+            document.getElementById('icon-fav').setAttribute('data-lucide', isFav ? 'heart-off' : 'bookmark');
             lucide.createIcons();
         }
 
-        window.showPage = (p, autoClose) => {
+        window.showPage = (p, isManual) => {
             document.querySelectorAll('.page-sec').forEach(s => s.classList.add('hidden'));
             document.getElementById(`page-${p}`).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(`nav-${p}`).classList.add('active');
-            if(autoClose && window.innerWidth <= 768) toggleSidebar(false);
+            if(isManual && window.innerWidth <= 768) toggleSidebar(false);
         };
 
         window.toggleSidebar = (state) => {
-            const s = document.getElementById('sidebar'), o = document.getElementById('overlay');
-            if(state) { s.classList.add('active'); o.classList.add('active'); }
-            else { s.classList.remove('active'); o.classList.remove('active'); }
+            document.getElementById('sidebar').classList.toggle('active', state);
+            document.getElementById('overlay').classList.toggle('active', state);
         };
 
         window.closePlayer = () => { player.pause(); document.getElementById('modal-player').classList.remove('active'); };
-        window.playM3u8 = () => { const u = document.getElementById('m3u-input').value; if(u) openPlayer({ vod_name: "串流解析", vod_play_url: `PLAY$${u}` }); };
-        window.loadMusic = (input) => {
+        
+        window.playM3u8 = () => {
+            const val = document.getElementById('m3u-url').value;
+            if(val) launchPlayer({ vod_name: "外部解析流", vod_play_url: `PLAY$${val}`, _from: "EXTERNAL" });
+        };
+
+        window.handleMusicFiles = (input) => {
             const files = Array.from(input.files);
             const tracks = files.map(f => `${f.name}$${URL.createObjectURL(f)}`);
-            if(files.length) openPlayer({ vod_name: "本地播放", vod_play_url: tracks.join('#') });
+            if(files.length) launchPlayer({ vod_name: "本地歌單", vod_play_url: tracks.join('#'), _from: "LOCAL_ASSETS" });
         };
     </script>
 </body>
 </html>
+
