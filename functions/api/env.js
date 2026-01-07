@@ -19,7 +19,7 @@ export async function onRequest(context) {
         const url = new URL(request.url);
         const action = url.searchParams.get("action");
 
-        // 延遲檢測
+        // 1. 延遲檢測 (資源探測)
         if (action === "proxy_ping") {
             const target = url.searchParams.get("u");
             const start = Date.now();
@@ -30,9 +30,11 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ ms: -1 }), { headers });
             }
         }
+
+        // 2. 基礎設施延遲檢測 (D1/KV)
         if (action === "kv_ping") {
             const start = Date.now();
-            if (kv) await kv.get("check");
+            if (kv) await kv.get("ping");
             return new Response(JSON.stringify({ ms: Date.now() - start }), { headers });
         }
         if (action === "d1_ping") {
@@ -41,7 +43,7 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ ms: Date.now() - start }), { headers });
         }
 
-        // 數據加載 (移除自定義背景，僅回傳資料)
+        // 3. 數據同步 (我的儲存 & 雲端歷史)
         if (action === "load_db") {
             if (!db) return new Response(JSON.stringify({ fav: [], history: [] }), { headers });
             const { results } = await db.prepare("SELECT content FROM user_data WHERE id = ?").bind("user_default").all();
