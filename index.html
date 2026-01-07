@@ -387,4 +387,40 @@
         async function toggleFav() {
             const idx = dbData.fav.findIndex(x => x.vod_id === currentVod.vod_id);
             if(idx > -1) dbData.fav.splice(idx, 1);
-            else db
+            else dbData.fav.unshift(currentVod);
+            updateFavBtn(); render('fav', dbData.fav);
+            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
+        }
+
+        function updateFavBtn() {
+            const isFav = dbData.fav.some(x => x.vod_id === currentVod.vod_id);
+            document.getElementById('v-fav-text').innerText = isFav ? "已儲存" : "儲存";
+            document.getElementById('v-fav-btn').style.color = isFav ? '#f97316' : '#fff';
+            lucide.createIcons();
+        }
+
+        function saveHistory(v) {
+            dbData.history = [v, ...dbData.history.filter(x => x.vod_id !== v.vod_id)].slice(0, 50);
+            render('history', dbData.history);
+            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
+        }
+
+        window.showPage = p => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`page-${p}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(l => l.classList.remove('active'));
+            document.getElementById(`n-${p}`).classList.add('active');
+        };
+
+        window.closePlayer = () => { player.pause(); document.getElementById('player-modal').classList.remove('open'); };
+        window.playM3U8 = () => {
+            const u = document.getElementById('m3u8-url').value;
+            if(u) openVod({ vod_name: "REMOTE STREAM", vod_play_url: `M3U8$${u}`, vod_id: 'm3u8', vod_pic: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81' }, true);
+        };
+        window.handleLocal = i => {
+            const files = Array.from(i.files).map(f => `${f.name}$${URL.createObjectURL(f)}`);
+            if(files.length) openVod({ vod_name: "LOCAL DISK", vod_play_url: files.join('#'), vod_id: 'local', vod_pic: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400' }, true);
+        };
+    </script>
+</body>
+</html>
