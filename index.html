@@ -3,34 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrangePlayer - Pro Media Hub</title>
+    <title>OrangePlayer - Discovery Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        :root { --primary: #f97316; --bg: #050505; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary: #f97316; --bg-dark: #050505; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg-dark); color: #fff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
+        /* Sidebar Styles */
         #sidebar { width: 260px; background: #0a0a0a; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
         @media (max-width: 768px) { #sidebar { position: fixed; left: -260px; top: 0; bottom: 0; } #sidebar.active { transform: translateX(260px); } }
         
         .nav-item { transition: 0.2s; cursor: pointer; color: #71717a; border-radius: 12px; margin-bottom: 4px; }
         .nav-item:hover, .nav-item.active { color: var(--primary); background: rgba(249, 115, 22, 0.1); }
 
-        main { flex: 1; overflow-y: auto; scroll-behavior: smooth; background: var(--bg); position: relative; }
-        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        main { flex: 1; overflow-y: auto; scroll-behavior: smooth; background: var(--bg-dark); }
+        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
         
-        .vod-card { transition: all 0.3s ease; cursor: pointer; }
-        .vod-card:hover { transform: translateY(-5px); }
+        /* Grid & Cards */
+        .vod-card { transition: transform 0.3s ease; cursor: pointer; position: relative; }
+        .vod-card:hover { transform: translateY(-8px); }
         
-        /* 播放介面不透明修正 */
-        #modal-player { background: #050505; z-index: 300; }
-        .video-wrapper { aspect-ratio: 16/9; background: #000; border-radius: 1.5rem; overflow: hidden; border: 1px solid #222; }
+        /* Modal Correction - Solid Background */
+        #modal-player { background: #050505; position: fixed; inset: 0; z-index: 300; display: none; overflow-y: auto; }
+        #modal-player.active { display: block; }
+        .video-shell { aspect-ratio: 16/9; background: #000; border-radius: 1.5rem; overflow: hidden; border: 1px solid #222; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 90; display: none; }
         #overlay.active { display: block; }
+
+        .btn-action { transition: 0.2s; }
+        .btn-action:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -39,7 +45,7 @@
 
     <aside id="sidebar">
         <div class="p-6">
-            <!-- 左上方橘色標誌 -->
+            <!-- 品牌標識 -->
             <div class="flex items-center gap-3 mb-10 select-none">
                 <div class="bg-orange-500 p-2.5 rounded-xl text-white shadow-lg shadow-orange-500/40">
                     <i data-lucide="play" class="w-5 h-5 fill-current"></i>
@@ -49,166 +55,198 @@
 
             <nav class="space-y-1">
                 <div onclick="showPage('home', true)" id="nav-home" class="nav-item active flex items-center p-4 font-bold">
-                    <i data-lucide="search" class="w-5 h-5"></i><span class="ml-4">聚合搜尋</span>
+                    <i data-lucide="layout-grid"></i><span class="ml-4">首頁推薦</span>
                 </div>
                 <div onclick="showPage('m3u8', true)" id="nav-m3u8" class="nav-item flex items-center p-4 font-bold">
-                    <i data-lucide="zap" class="w-5 h-5"></i><span class="ml-4">M3U8 解析</span>
+                    <i data-lucide="zap"></i><span class="ml-4">M3U8 解析</span>
                 </div>
                 <div onclick="showPage('music', true)" id="nav-music" class="nav-item flex items-center p-4 font-bold">
-                    <i data-lucide="music" class="w-5 h-5"></i><span class="ml-4">本地歌單</span>
+                    <i data-lucide="music"></i><span class="ml-4">本地歌單</span>
                 </div>
                 <div onclick="showPage('fav', true)" id="nav-fav" class="nav-item flex items-center p-4 font-bold">
-                    <i data-lucide="bookmark" class="w-5 h-5"></i><span class="ml-4">我的儲存</span>
+                    <i data-lucide="bookmark"></i><span class="ml-4">我的儲存</span>
                 </div>
                 <div onclick="showPage('history', true)" id="nav-history" class="nav-item flex items-center p-4 font-bold">
-                    <i data-lucide="history" class="w-5 h-5"></i><span class="ml-4">雲端歷史</span>
+                    <i data-lucide="clock"></i><span class="ml-4">雲端歷史</span>
                 </div>
             </nav>
         </div>
         
         <div class="mt-auto p-6">
             <div class="glass p-4 rounded-2xl border-orange-500/10">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">D1 Sync Delay</span>
-                    <span id="d1-latency" class="text-[10px] font-mono text-orange-500">--ms</span>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                    <span class="text-[10px] font-black text-zinc-500 uppercase">D1 Cloud Sync</span>
                 </div>
-                <div class="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
-                    <div id="d1-bar" class="bg-orange-500 h-full transition-all duration-500" style="width: 0%"></div>
-                </div>
+                <p id="d1-status" class="text-[9px] font-mono text-zinc-500">LATENCY: -- MS</p>
             </div>
         </div>
     </aside>
 
     <main>
-        <header class="p-6 md:px-10 sticky top-0 bg-[#050505]/95 backdrop-blur-md z-50 border-b border-white/5">
+        <header class="p-6 md:px-10 sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 border-b border-white/5">
             <div class="max-w-6xl mx-auto flex items-center gap-4">
                 <button onclick="toggleSidebar(true)" class="md:hidden p-3 bg-zinc-900 rounded-xl"><i data-lucide="menu"></i></button>
                 <div class="relative flex-1">
-                    <input type="text" id="searchInput" placeholder="搜尋 25+ 播放源 (搜尋邏輯保持)..." class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-12 focus:border-orange-500 outline-none transition-all">
+                    <input type="text" id="searchInput" placeholder="搜尋 25+ 播放源..." class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-12 focus:border-orange-500 outline-none transition-all">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"></i>
                 </div>
             </div>
         </header>
 
         <div class="px-6 md:px-10 pb-20">
+            <!-- 推薦頁面 -->
             <div id="page-home" class="page-sec">
-                <h2 id="home-title" class="text-xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase">推薦內容</h2>
+                <div class="flex items-center justify-between mb-8">
+                    <h2 id="home-title" class="text-xl font-black border-l-4 border-orange-500 pl-4 uppercase">今日推薦</h2>
+                    <button id="btn-shuffle" onclick="shuffleHome()" class="btn-action flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 px-5 py-2.5 rounded-xl text-sm font-bold border border-white/5">
+                        <i data-lucide="refresh-ccw" class="w-4 h-4"></i> 換一批
+                    </button>
+                </div>
                 <div id="grid-home" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"></div>
             </div>
 
+            <!-- M3U8 解析頁面 -->
             <div id="page-m3u8" class="page-sec hidden max-w-2xl mx-auto pt-10">
-                <div class="glass p-12 rounded-[2.5rem] text-center">
-                    <h2 class="text-2xl font-black mb-6 uppercase">M3U8 Parser</h2>
-                    <input type="text" id="m3u-input" placeholder="貼上串流連結" class="w-full bg-black/40 border border-zinc-800 rounded-xl p-5 mb-6 text-center outline-none focus:border-orange-500">
-                    <button onclick="playM3u8()" class="w-full bg-orange-600 hover:bg-orange-500 py-5 rounded-xl font-black transition-all shadow-lg shadow-orange-600/20">啟動播放</button>
+                <div class="glass p-12 rounded-[2.5rem] text-center border-orange-500/20">
+                    <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter italic">HLS Stream Engine</h2>
+                    <input type="text" id="m3u-url" placeholder="輸入 .m3u8 網址" class="w-full bg-black/40 border border-zinc-800 rounded-xl p-5 mb-6 text-center outline-none focus:border-orange-500 font-mono text-orange-500">
+                    <button onclick="playM3u8()" class="w-full bg-orange-600 hover:bg-orange-500 py-5 rounded-xl font-black transition-all shadow-lg shadow-orange-600/20">即刻播放</button>
                 </div>
             </div>
 
+            <!-- 本地歌單頁面 -->
             <div id="page-music" class="page-sec hidden max-w-2xl mx-auto pt-10">
                 <div class="glass p-10 rounded-[2.5rem]">
-                    <h2 class="text-xl font-black mb-8">本地歌單</h2>
-                    <input type="file" id="music-input" multiple accept="audio/*" class="hidden" onchange="loadMusic(this)">
-                    <button onclick="document.getElementById('music-input').click()" class="w-full py-20 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center hover:border-orange-500 transition-all">
-                        <i data-lucide="music" class="w-10 h-10 mb-4 text-zinc-700"></i>
-                        <span class="text-zinc-500 font-bold">載入本地音訊</span>
+                    <h2 class="text-xl font-black mb-8">本地音軌資源</h2>
+                    <input type="file" id="music-upload" multiple accept="audio/*" class="hidden" onchange="handleMusicFiles(this)">
+                    <button onclick="document.getElementById('music-upload').click()" class="w-full py-20 border-2 border-dashed border-zinc-800 rounded-3xl flex flex-col items-center hover:border-orange-500 transition-all group">
+                        <i data-lucide="plus-circle" class="w-12 h-12 mb-4 text-zinc-700 group-hover:text-orange-500"></i>
+                        <span class="text-zinc-500 font-bold">匯入音樂檔案</span>
                     </button>
-                    <div id="music-list" class="mt-8 space-y-2"></div>
+                    <div id="local-music-list" class="mt-8 space-y-2"></div>
                 </div>
             </div>
 
+            <!-- 收藏與歷史 -->
             <div id="page-fav" class="page-sec hidden"><h2 class="text-xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase">我的儲存</h2><div id="grid-fav" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"></div></div>
-            <div id="page-history" class="page-sec hidden"><h2 class="text-xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase">雲端歷史</h2><div id="grid-history" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"></div></div>
+            <div id="page-history" class="page-sec hidden"><h2 class="text-xl font-black mb-8 border-l-4 border-orange-500 pl-4 uppercase">歷史紀錄</h2><div id="grid-history" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"></div></div>
         </div>
     </main>
 
     <!-- 播放器 Modal -->
-    <div id="modal-player" class="fixed inset-0 hidden overflow-y-auto">
-        <div class="max-w-6xl mx-auto px-4 py-10">
-            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[310] bg-zinc-800 p-4 rounded-full hover:bg-orange-600 transition"><i data-lucide="x"></i></button>
-            <div class="video-wrapper mb-8"><video id="v-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video></div>
+    <div id="modal-player">
+        <div class="max-w-6xl mx-auto px-4 py-10 relative">
+            <button onclick="closePlayer()" class="fixed top-6 right-6 z-[310] bg-zinc-800 p-4 rounded-full hover:bg-orange-600 transition shadow-2xl"><i data-lucide="x"></i></button>
             
+            <div class="video-shell mb-8">
+                <video id="video-core" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" width="auto" height="auto"></video>
+            </div>
+
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div>
-                    <h1 id="p-title" class="text-2xl font-black mb-2 tracking-tight">載入中...</h1>
-                    <span id="p-src" class="text-[10px] bg-orange-600 px-3 py-1 rounded-md font-black uppercase">檢索源</span>
+                <div class="flex-1">
+                    <h1 id="v-title" class="text-3xl font-black mb-2 tracking-tight">正在載入...</h1>
+                    <div class="flex items-center gap-3">
+                        <span id="v-from" class="text-[10px] bg-orange-600 px-3 py-1 rounded-md font-black uppercase tracking-widest">CLOUD SYNC</span>
+                        <span id="v-latency" class="text-[10px] bg-zinc-800 px-3 py-1 rounded-md font-black uppercase text-zinc-400">PING: -- MS</span>
+                    </div>
                 </div>
-                <button onclick="toggleFav()" id="p-fav-btn" class="flex items-center gap-3 bg-zinc-900 border border-white/5 px-8 py-4 rounded-2xl hover:bg-orange-600 transition-all font-bold">
-                    <i data-lucide="bookmark" id="p-fav-icon"></i> <span id="p-fav-txt">儲存到 D1</span>
+                <button onclick="toggleFavorite()" id="btn-fav" class="flex items-center gap-3 bg-zinc-900 border border-white/5 px-8 py-4 rounded-2xl hover:bg-orange-600 transition-all font-bold">
+                    <i data-lucide="bookmark" id="icon-fav"></i> <span id="text-fav">儲存到 D1</span>
                 </button>
             </div>
 
-            <div class="mb-6 border-b border-zinc-900 pb-2"><h3 class="text-zinc-500 font-black uppercase text-xs">分集選單</h3></div>
-            <div id="p-eps" class="glass p-6 md:p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 rounded-[2rem] mb-10"></div>
-
-            <!-- 延遲測試 (播放源) -->
-            <div class="glass p-6 rounded-2xl flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-zinc-900 rounded-xl"><i data-lucide="activity" class="text-orange-500 w-5 h-5"></i></div>
-                    <div>
-                        <div class="text-[10px] font-black text-zinc-500 uppercase">播放源連線延遲</div>
-                        <div id="latency-val" class="text-lg font-mono font-black">-- ms</div>
-                    </div>
-                </div>
-                <div id="latency-status" class="text-[10px] font-black px-4 py-1 rounded-full bg-zinc-800 text-zinc-500 uppercase">待測中</div>
-            </div>
+            <div class="mb-6 border-b border-zinc-900 pb-2"><h3 class="text-zinc-500 font-black uppercase text-[10px] tracking-widest">分集選單 EPISODES</h3></div>
+            <div id="v-episodes" class="glass p-6 md:p-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 rounded-[2rem]"></div>
         </div>
     </div>
 
     <script>
-        const API = '/api/env';
-        let player = null, active_item = null, store = { fav: [], history: [] };
+        const API_ENDPOINT = '/api/env';
+        let player = null;
+        let currentItem = null;
+        let appData = { fav: [], history: [] };
 
         const SOURCES = [
             { name: "量子資源", url: "https://cj.lziapi.com/api.php/provide/vod/at/json" },
             { name: "索尼資源", url: "https://suoniapi.com/api.php/provide/vod/at/json" },
             { name: "豪華資源", url: "https://hhzyapi.com/api.php/provide/vod/at/json" },
-            { name: "快車資源", url: "https://caiji.kuaichezy.com/api.php/provide/vod/at/json" },
             { name: "金鷹資源", url: "https://jyzyapi.com/api.php/provide/vod/at/json" },
             { name: "影圖資源", url: "https://cj.yingtzy.com/api.php/provide/vod/at/json" }
         ];
 
         window.onload = () => {
             lucide.createIcons();
-            player = videojs('v-player', { fluid: true, playbackRates: [0.5, 1, 1.5, 2] });
-            initD1();
-            searchParallel("2025");
-            document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') searchParallel(e.target.value); };
+            player = videojs('video-core', { fluid: true, playbackRates: [0.5, 1, 1.25, 1.5, 2] });
+            
+            initCloudData();
+            shuffleHome(); // 初始載入隨機電影
+            
+            document.getElementById('searchInput').onkeydown = (e) => {
+                if(e.key === 'Enter') performSearch(e.target.value);
+            };
         };
 
-        // D1 初始化與延遲測試
-        async function initD1() {
+        // 初始化與 D1 延遲偵測
+        async function initCloudData() {
             const start = Date.now();
             try {
-                const r = await fetch(API);
-                const res = await r.json();
-                const latency = Date.now() - start;
-                
-                document.getElementById('d1-latency').innerText = `${latency}ms`;
-                document.getElementById('d1-bar').style.width = Math.min(latency / 5, 100) + '%';
-
-                if(res.data) {
-                    store = res.data;
-                    renderGrid(store.fav, 'grid-fav');
-                    renderGrid(store.history, 'grid-history');
+                const res = await fetch(API_ENDPOINT);
+                const json = await res.json();
+                document.getElementById('d1-status').innerText = `LATENCY: ${Date.now() - start} MS`;
+                if(json.data) {
+                    appData = json.data;
+                    renderGrid(appData.fav, 'grid-fav');
+                    renderGrid(appData.history, 'grid-history');
                 }
             } catch(e) {
-                document.getElementById('d1-latency').innerText = 'Offline';
+                document.getElementById('d1-status').innerText = "LATENCY: OFFLINE";
             }
         }
 
-        async function syncD1(action, payload) {
+        async function syncToD1(action, payload) {
             try {
-                await fetch(API, { method: 'POST', body: JSON.stringify({ action, payload }) });
+                await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, payload })
+                });
             } catch(e) {}
         }
 
-        // 搜尋邏輯 (保持不動)
-        async function searchParallel(kw) {
-            if(!kw) return;
-            showPage('home', false); // 搜尋時不自動收合側邊欄，除非在移動端
-            document.getElementById('home-title').innerText = `搜尋中: ${kw}`;
+        // 隨機電影推薦邏輯 (並行抓取確保成功)
+        async function shuffleHome() {
+            showPage('home', false);
             const grid = document.getElementById('grid-home');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-bold uppercase tracking-widest animate-pulse">Parallel Scanning...</p></div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-bold uppercase tracking-widest animate-pulse">正在生成隨機推薦...</p></div>';
+            
+            // 隨機選取 3 個來源站抓取最新內容
+            const selectedSources = SOURCES.sort(() => 0.5 - Math.random()).slice(0, 3);
+            const tasks = selectedSources.map(async (s) => {
+                try {
+                    const r = await fetch(s.url);
+                    const d = await r.json();
+                    return (d.list || []).map(v => ({...v, _from: s.name}));
+                } catch(e) { return []; }
+            });
+
+            const results = await Promise.allSettled(tasks);
+            let pool = [];
+            results.forEach(res => { if(res.status === 'fulfilled') pool = [...pool, ...res.value]; });
+
+            // 打亂並選取前 18 個
+            const shuffled = pool.sort(() => 0.5 - Math.random()).slice(0, 18);
+            renderGrid(shuffled, 'grid-home');
+            document.getElementById('home-title').innerText = "今日熱門推薦";
+        }
+
+        // 搜尋邏輯 (保持原有邏輯)
+        async function performSearch(kw) {
+            if(!kw) return;
+            showPage('home', false);
+            document.getElementById('home-title').innerText = `正在搜尋: ${kw}`;
+            const grid = document.getElementById('grid-home');
+            grid.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-orange-500 font-bold uppercase animate-pulse">橙子聚合引擎搜尋中...</p></div>';
 
             const tasks = SOURCES.map(async (s) => {
                 try {
@@ -219,32 +257,40 @@
             });
 
             const results = await Promise.allSettled(tasks);
-            let pool = [];
-            results.forEach(res => { if(res.status === 'fulfilled') pool = [...pool, ...res.value]; });
+            let combined = [];
+            results.forEach(res => { if(res.status === 'fulfilled') combined = [...combined, ...res.value]; });
 
+            // 去重
             const unique = [];
-            const memo = new Set();
-            pool.forEach(v => { if(!memo.has(v.vod_name)) { memo.add(v.vod_name); unique.push(v); } });
+            const seen = new Set();
+            combined.forEach(item => {
+                if(!seen.has(item.vod_name)) {
+                    seen.add(item.vod_name);
+                    unique.push(item);
+                }
+            });
 
             renderGrid(unique, 'grid-home');
             document.getElementById('home-title').innerText = `搜尋結果: ${kw}`;
         }
 
-        function renderGrid(data, id) {
-            const container = document.getElementById(id);
+        function renderGrid(data, containerId) {
+            const container = document.getElementById(containerId);
             container.innerHTML = '';
-            if(!data.length) { container.innerHTML = '<div class="col-span-full py-10 text-center text-zinc-600 uppercase font-black">Empty Content</div>'; return; }
-            
+            if(!data || data.length === 0) {
+                container.innerHTML = '<div class="col-span-full py-10 text-center text-zinc-600 font-black uppercase">無內容資源</div>';
+                return;
+            }
             data.forEach(v => {
                 const card = document.createElement('div');
                 card.className = "vod-card group";
-                card.onclick = () => openPlayer(v);
+                card.onclick = () => launchPlayer(v);
                 card.innerHTML = `
                     <div class="aspect-[3/4.2] rounded-2xl overflow-hidden mb-3 relative bg-zinc-900 border border-white/5">
-                        <img src="${v.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://via.placeholder.com/300x420?text=Orange'">
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[9px] font-black uppercase">
-                            <span class="bg-orange-600 px-2 py-0.5 rounded-lg">${v.vod_remarks || 'HD'}</span>
-                            <span class="bg-black/60 px-2 py-0.5 rounded-lg border border-white/10 text-zinc-400">${v._from || 'Vod'}</span>
+                        <img src="${v.vod_pic}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://via.placeholder.com/300x420?text=OrangePlayer'">
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <span class="bg-orange-600 text-[9px] px-2 py-0.5 rounded-lg font-black uppercase">${v.vod_remarks || 'HD'}</span>
+                            <span class="bg-black/60 text-[8px] px-2 py-0.5 rounded-lg font-bold border border-white/10 text-zinc-400">${v._from || 'Vod'}</span>
                         </div>
                     </div>
                     <div class="text-[12px] font-black truncate px-1 group-hover:text-orange-500 transition-colors">${v.vod_name}</div>
@@ -253,113 +299,110 @@
             });
         }
 
-        function openPlayer(v) {
-            active_item = v;
-            document.getElementById('modal-player').classList.remove('hidden');
-            document.getElementById('p-title').innerText = v.vod_name;
-            document.getElementById('p-src').innerText = v._from || 'ORANGE_CLOUD';
+        function launchPlayer(v) {
+            currentItem = v;
+            document.getElementById('modal-player').classList.add('active');
+            document.getElementById('v-title').innerText = v.vod_name;
+            document.getElementById('v-from').innerText = v._from || 'ORANGE_VOD';
             
-            const raw = v.vod_play_url || "";
+            const rawUrl = v.vod_play_url || "";
             let eps = [];
-            if(raw.includes('#')) eps = raw.split('#').map(l => l.split('$'));
-            else if(raw.includes('$')) eps = [raw.split('$')];
-            else eps = [['播放', raw]];
+            if(rawUrl.includes('#')) eps = rawUrl.split('#').map(line => line.split('$'));
+            else if(rawUrl.includes('$')) eps = [rawUrl.split('$')];
+            else eps = [['立即播放', rawUrl]];
 
-            const container = document.getElementById('p-eps');
-            container.innerHTML = '';
-            eps.forEach((p, i) => {
-                const name = p[0] || `EP${i+1}`;
-                const url = p[p.length - 1];
+            const epBox = document.getElementById('v-episodes');
+            epBox.innerHTML = '';
+            eps.forEach((parts, i) => {
+                const name = parts[0] || `EP ${i+1}`;
+                const url = parts[parts.length - 1];
                 if(!url) return;
+
                 const btn = document.createElement('button');
                 btn.className = "bg-zinc-900 border border-white/5 p-4 rounded-xl text-[10px] font-bold hover:bg-orange-600 transition truncate text-zinc-400 hover:text-white";
                 btn.innerText = name;
                 btn.onclick = () => {
-                    document.querySelectorAll('#p-eps button').forEach(b => b.classList.remove('bg-orange-600', 'text-white'));
+                    document.querySelectorAll('#v-episodes button').forEach(b => b.classList.remove('bg-orange-600', 'text-white'));
                     btn.classList.add('bg-orange-600', 'text-white');
-                    const isM3u = url.includes('.m3u8');
-                    player.src({ src: url, type: isM3u ? 'application/x-mpegURL' : 'video/mp4' });
+                    const isHls = url.includes('.m3u8');
+                    player.src({ src: url, type: isHls ? 'application/x-mpegURL' : 'video/mp4' });
                     player.play();
-                    addHistory(v);
-                    testLatency(url);
+                    
+                    updateHistory(v);
+                    measurePing(url);
                 };
-                container.appendChild(btn);
+                epBox.appendChild(btn);
             });
-            if(container.firstChild) container.firstChild.click();
-            updateFavUI();
+
+            if(epBox.firstChild) epBox.firstChild.click();
+            refreshFavBtn();
             lucide.createIcons();
         }
 
-        async function testLatency(url) {
-            const val = document.getElementById('latency-val');
-            const status = document.getElementById('latency-status');
+        async function measurePing(url) {
             const start = Date.now();
             try {
                 await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                const lat = Date.now() - start;
-                val.innerText = `${lat} ms`;
-                status.innerText = lat < 200 ? '流暢' : '普通';
-                status.className = `text-[10px] font-black px-4 py-1 rounded-full uppercase ${lat < 200 ? 'bg-green-500/20 text-green-500' : 'bg-orange-500/20 text-orange-500'}`;
+                document.getElementById('v-latency').innerText = `PING: ${Date.now() - start} MS`;
             } catch(e) {
-                val.innerText = 'Timeout';
-                status.innerText = '連線慢';
-                status.className = 'text-[10px] font-black px-4 py-1 rounded-full uppercase bg-red-500/20 text-red-500';
+                document.getElementById('v-latency').innerText = "PING: TIMEOUT";
             }
         }
 
-        function toggleFav() {
-            if(!active_item) return;
-            const idx = store.fav.findIndex(x => x.vod_name === active_item.vod_name);
-            if(idx > -1) store.fav.splice(idx, 1);
-            else store.fav.unshift(active_item);
-            syncD1('save', store.fav);
-            renderGrid(store.fav, 'grid-fav');
-            updateFavUI();
+        function toggleFavorite() {
+            if(!currentItem) return;
+            const idx = appData.fav.findIndex(x => x.vod_name === currentItem.vod_name);
+            if(idx > -1) appData.fav.splice(idx, 1);
+            else appData.fav.unshift(currentItem);
+            syncToD1('save', appData.fav);
+            renderGrid(appData.fav, 'grid-fav');
+            refreshFavBtn();
         }
 
-        function addHistory(v) {
-            store.history = store.history.filter(x => x.vod_name !== v.vod_name);
-            store.history.unshift(v);
-            if(store.history.length > 50) store.history.pop();
-            syncD1('history', store.history);
-            renderGrid(store.history, 'grid-history');
+        function updateHistory(v) {
+            appData.history = appData.history.filter(x => x.vod_name !== v.vod_name);
+            appData.history.unshift(v);
+            if(appData.history.length > 50) appData.history.pop();
+            syncToD1('history', appData.history);
+            renderGrid(appData.history, 'grid-history');
         }
 
-        function updateFavUI() {
-            const isFav = active_item && store.fav.some(x => x.vod_name === active_item.vod_name);
-            const btn = document.getElementById('p-fav-btn');
+        function refreshFavBtn() {
+            const isFav = currentItem && appData.fav.some(x => x.vod_name === currentItem.vod_name);
+            const btn = document.getElementById('btn-fav');
             btn.classList.toggle('bg-orange-600', isFav);
-            document.getElementById('p-fav-txt').innerText = isFav ? '已儲存' : '儲存到 D1';
-            document.getElementById('p-fav-icon').setAttribute('data-lucide', isFav ? 'heart-off' : 'bookmark');
+            document.getElementById('text-fav').innerText = isFav ? '已儲存到雲端' : '儲存到 D1';
+            document.getElementById('icon-fav').setAttribute('data-lucide', isFav ? 'heart-off' : 'bookmark');
             lucide.createIcons();
         }
 
-        // 修改 showPage 邏輯，避免搜尋完自動摺疊
-        window.showPage = (p, shouldCloseSidebar) => {
+        window.showPage = (p, isManual) => {
             document.querySelectorAll('.page-sec').forEach(s => s.classList.add('hidden'));
             document.getElementById(`page-${p}`).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(`nav-${p}`).classList.add('active');
             
-            // 只有在明確要求（如點擊選單項）且在移動端時才關閉側邊欄
-            if(shouldCloseSidebar && window.innerWidth <= 768) toggleSidebar(false);
+            // 只有點擊選單且在移動端時收合
+            if(isManual && window.innerWidth <= 768) toggleSidebar(false);
         };
 
         window.toggleSidebar = (state) => {
-            const s = document.getElementById('sidebar');
-            const o = document.getElementById('overlay');
-            if(state) { s.classList.add('active'); o.classList.add('active'); }
-            else { s.classList.remove('active'); o.classList.remove('active'); }
+            document.getElementById('sidebar').classList.toggle('active', state);
+            document.getElementById('overlay').classList.toggle('active', state);
         };
 
-        window.closePlayer = () => { player.pause(); document.getElementById('modal-player').classList.add('hidden'); };
-        window.playM3u8 = () => { const u = document.getElementById('m3u-input').value; if(u) openPlayer({ vod_name: "自定義流", vod_play_url: `M3U8$${u}` }); };
-        window.loadMusic = (i) => {
-            const files = Array.from(i.files);
+        window.closePlayer = () => { player.pause(); document.getElementById('modal-player').classList.remove('active'); };
+        
+        window.playM3u8 = () => {
+            const val = document.getElementById('m3u-url').value;
+            if(val) launchPlayer({ vod_name: "外部解析流", vod_play_url: `PLAY$${val}`, _from: "EXTERNAL" });
+        };
+
+        window.handleMusicFiles = (input) => {
+            const files = Array.from(input.files);
             const tracks = files.map(f => `${f.name}$${URL.createObjectURL(f)}`);
-            if(files.length) openPlayer({ vod_name: "本地音樂", vod_play_url: tracks.join('#') });
+            if(files.length) launchPlayer({ vod_name: "本地歌單", vod_play_url: tracks.join('#'), _from: "LOCAL_ASSETS" });
         };
     </script>
 </body>
 </html>
-
