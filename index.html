@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORANGEPLAYER PRO - FLAGSHIP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORANGEPLAYER PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
@@ -11,161 +11,118 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;600;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        :root { 
-            --orange: #f97316; 
-            --sidebar-w: 260px; 
-        }
+        :root { --orange: #f97316; --sidebar-w: 260px; }
         
         body { 
             font-family: 'SF Pro Display', 'Noto Sans TC', sans-serif; 
-            background: #000; 
-            color: #fff; 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex; 
+            background: #000; color: #fff; height: 100vh; overflow: hidden; display: flex; 
         }
 
-        /* 預設美麗背景 */
         #bg-layer { 
-            position: fixed; 
-            inset: 0; 
-            z-index: -1; 
-            background-image: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400');
-            background-size: cover; 
-            background-position: center; 
+            position: fixed; inset: 0; z-index: -1; 
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80') center/cover;
         }
         #bg-layer::after { 
-            content: ''; 
-            position: absolute; 
-            inset: 0; 
-            backdrop-filter: blur(50px) saturate(180%); 
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)); 
+            content: ''; position: absolute; inset: 0; 
+            backdrop-filter: blur(60px) saturate(150%); 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.9)); 
         }
 
-        /* 側邊欄佈局 */
         #sidebar {
-            width: var(--sidebar-w);
-            background: rgba(255, 255, 255, 0.03);
-            border-right: 1px solid rgba(255,255,255,0.08);
-            backdrop-filter: blur(40px);
-            z-index: 1000;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: fixed;
-            height: 100vh;
+            width: var(--sidebar-w); background: rgba(0, 0, 0, 0.4);
+            border-right: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(40px);
+            z-index: 1000; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed; height: 100vh;
         }
         #sidebar.collapsed { transform: translateX(-100%); }
 
-        /* 分離式圓形收回鈕 - 三槓 */
         #menu-toggle-btn {
-            position: absolute;
-            right: -56px; top: 24px;
-            width: 42px; height: 42px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 999px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; color: #fff; 
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            z-index: 1001;
+            position: absolute; right: -52px; top: 20px;
+            width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 999px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s; z-index: 1001;
         }
-        #menu-toggle-btn:hover { background: var(--orange); border-color: transparent; transform: scale(1.1); }
+        #menu-toggle-btn:hover { background: var(--orange); }
 
         #main-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            padding-left: var(--sidebar-w);
-            transition: padding-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1; display: flex; flex-direction: column; width: 100%;
+            padding-left: var(--sidebar-w); transition: padding-left 0.4s;
         }
         body.is-collapsed #main-container { padding-left: 0; }
 
-        header {
-            padding: 24px 40px;
-            display: flex;
-            justify-content: flex-end;
-            position: sticky; top: 0;
-            z-index: 40;
-            background: rgba(0,0,0,0.01);
-            backdrop-filter: blur(10px);
-        }
-        header .search-wrap {
-            width: 100%;
-            max-width: 400px;
-            margin-left: 70px; /* 避讓收回鈕 */
-        }
+        header { padding: 20px 30px; display: flex; justify-content: flex-end; z-index: 40; }
+        .search-wrap { width: 100%; max-width: 380px; margin-left: 60px; }
 
-        /* 縮小版電影網格 (精緻化) */
         .movie-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
-            gap: 16px; 
-            padding-bottom: 120px; 
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
+            gap: 12px; padding-bottom: 100px; 
         }
         
         .card-item { 
-            border-radius: 16px; 
-            background: rgba(255,255,255,0.04); 
-            border: 1px solid rgba(255,255,255,0.05); 
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); 
-            overflow: hidden; cursor: pointer; 
+            border-radius: 12px; background: rgba(255,255,255,0.04); 
+            border: 1px solid rgba(255,255,255,0.06); transition: 0.3s; 
+            overflow: hidden; cursor: pointer; position: relative;
         }
-        .card-item:hover { 
-            transform: scale(1.05); 
-            border-color: var(--orange); 
-            z-index: 10;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+        .card-item:hover { transform: translateY(-5px); border-color: var(--orange); }
+
+        .modal-overlay { position: fixed; inset: 0; z-index: 2000; display: none; background: rgba(0,0,0,0.95); backdrop-filter: blur(50px); overflow-y: auto; }
+        .modal-overlay.open { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .nav-btn { display: flex; align-items: center; padding: 12px 18px; border-radius: 12px; cursor: pointer; transition: 0.2s; color: rgba(255,255,255,0.35); font-weight: 700; margin: 4px 0; font-size: 13px; }
+        .nav-btn.active { background: var(--orange) !important; color: #fff !important; }
+
+        /* 修復手機端延遲監控顯示 */
+        .stats-area {
+            margin-top: auto; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05); padding: 8px; border-radius: 10px; text-align: center;
         }
 
-        .modal-overlay { position: fixed; inset: 0; z-index: 2000; display: none; background: rgba(0,0,0,0.95); backdrop-filter: blur(60px); padding: 20px; overflow-y: auto; }
-        .modal-overlay.open { display: flex; flex-direction: column; align-items: center; }
-        .glass-card { background: rgba(255,255,255,0.05); border-radius: 32px; border: 1px solid rgba(255,255,255,0.08); }
-
-        .nav-btn { display: flex; align-items: center; padding: 12px 20px; border-radius: 14px; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.3); font-weight: 800; margin: 4px 0; font-size: 13px; }
-        .nav-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
-        .nav-btn.active { background: var(--orange) !important; color: #fff !important; box-shadow: 0 8px 20px rgba(249,115,22,0.3); }
+        @media (max-width: 768px) {
+            :root { --sidebar-w: 240px; }
+            .movie-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+            .search-wrap { margin-left: 50px; }
+        }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="is-collapsed">
     <div id="bg-layer"></div>
 
-    <aside id="sidebar">
-        <div id="menu-toggle-btn" onclick="toggleSidebar()"><i data-lucide="menu" class="w-5 h-5"></i></div>
-        
-        <div class="p-8 h-full flex flex-col">
-            <!-- LOGO: OrangePlayer -->
-            <div class="flex items-center gap-3 mb-10 px-1">
-                <div class="bg-orange-500 p-2.5 rounded-xl shadow-lg shadow-orange-500/30">
-                    <i data-lucide="play" class="w-5 h-5 fill-white text-white"></i>
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-xl font-black italic tracking-tighter leading-none">ORANGE</span>
-                    <span class="text-[8px] font-black text-orange-500 tracking-[0.3em] uppercase">Player Pro</span>
+    <aside id="sidebar" class="collapsed">
+        <div id="menu-toggle-btn" onclick="toggleSidebar()"><i data-lucide="menu" class="w-5 h-5 text-white"></i></div>
+        <div class="p-6 h-full flex flex-col">
+            <!-- LOGO -->
+            <div class="flex items-center gap-3 mb-10">
+                <div class="bg-orange-500 p-2 rounded-lg"><i data-lucide="play" class="w-5 h-5 fill-white text-white"></i></div>
+                <div class="flex flex-col leading-none">
+                    <span class="text-xl font-black italic tracking-tighter">ORANGE</span>
+                    <span class="text-[8px] font-bold text-orange-500 tracking-widest uppercase">Player Pro</span>
                 </div>
             </div>
 
-            <nav class="flex-1">
-                <div onclick="showPage('home')" id="n-home" class="nav-btn active"><i data-lucide="compass" class="w-4 h-4"></i><span class="ml-4">影視探索</span></div>
-                <div onclick="showPage('m3u8')" id="n-m3u8" class="nav-btn"><i data-lucide="link-2" class="w-4 h-4"></i><span class="ml-4">M3U8 解析</span></div>
-                <div onclick="showPage('local')" id="n-local" class="nav-btn"><i data-lucide="folder-open" class="w-4 h-4"></i><span class="ml-4">本地歌單</span></div>
-                <div onclick="showPage('fav')" id="n-fav" class="nav-btn"><i data-lucide="bookmark" class="w-4 h-4"></i><span class="ml-4">我的儲存</span></div>
-                <div onclick="showPage('history')" id="n-history" class="nav-btn"><i data-lucide="clock-3" class="w-4 h-4"></i><span class="ml-4">雲端歷史</span></div>
+            <nav class="flex-1 space-y-1">
+                <div onclick="showPage('home')" id="n-home" class="nav-btn active"><i data-lucide="layout-grid" class="w-4 h-4 mr-3"></i>影視探索</div>
+                <div onclick="showPage('m3u8')" id="n-m3u8" class="nav-btn"><i data-lucide="link" class="w-4 h-4 mr-3"></i>M3U8 解析</div>
+                <div onclick="showPage('local')" id="n-local" class="nav-btn"><i data-lucide="music" class="w-4 h-4 mr-3"></i>本地音樂</div>
+                <div onclick="showPage('fav')" id="n-fav" class="nav-btn"><i data-lucide="heart" class="w-4 h-4 mr-3"></i>我的儲存</div>
+                <div onclick="showPage('history')" id="n-history" class="nav-btn"><i data-lucide="history" class="w-4 h-4 mr-3"></i>觀看歷史</div>
             </nav>
 
-            <!-- 延遲監控 -->
-            <div class="mt-auto pt-6 border-t border-white/5 space-y-2">
-                <div class="flex justify-between items-center px-4 py-2 bg-white/5 rounded-xl border border-white/5">
-                    <span class="text-[7px] font-black uppercase opacity-30">D1 Delay</span>
-                    <span id="stat-d1" class="text-[7px] font-black tracking-widest text-zinc-600">-- MS</span>
+            <div class="stats-area">
+                <div class="stat-box">
+                    <div class="text-[7px] text-zinc-500 font-bold uppercase">D1 Sync</div>
+                    <div id="stat-d1" class="text-[9px] font-black tracking-tighter">-- MS</div>
                 </div>
-                <div class="flex justify-between items-center px-4 py-2 bg-white/5 rounded-xl border border-white/5">
-                    <span class="text-[7px] font-black uppercase opacity-30">KV Delay</span>
-                    <span id="stat-kv" class="text-[7px] font-black tracking-widest text-zinc-600">-- MS</span>
+                <div class="stat-box">
+                    <div class="text-[7px] text-zinc-500 font-bold uppercase">Source</div>
+                    <div id="stat-src" class="text-[9px] font-black tracking-tighter">-- MS</div>
                 </div>
             </div>
         </div>
@@ -174,32 +131,33 @@
     <div id="main-container">
         <header>
             <div class="search-wrap relative">
-                <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4"></i>
-                <input type="text" id="searchInput" placeholder="搜尋 M3U8 資源..." class="w-full bg-white/5 border border-white/10 p-4 pl-12 rounded-xl outline-none focus:border-orange-500 transition-all text-xs font-bold shadow-2xl">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-3.5 h-3.5"></i>
+                <input type="text" id="searchInput" placeholder="搜尋影片/資源..." class="w-full bg-white/5 border border-white/10 p-3.5 pl-11 rounded-xl outline-none focus:border-orange-500 transition-all text-xs font-bold shadow-xl">
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-8 md:px-12 custom-scrollbar">
+        <main class="flex-1 overflow-y-auto px-6 md:px-10 custom-scrollbar">
             <div id="page-home" class="view">
-                <h2 class="text-3xl font-black italic mb-8 border-l-6 border-orange-500 pl-5 uppercase tracking-tighter">Recommended</h2>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-black italic border-l-4 border-orange-500 pl-4 uppercase tracking-tighter">Trending</h2>
+                    <span class="text-[9px] font-bold text-orange-500/50 uppercase tracking-[0.3em]">Direct Fetch Mode</span>
+                </div>
                 <div id="grid-home" class="movie-grid"></div>
             </div>
-            <div id="page-fav" class="view hidden"><h2 class="text-3xl font-black italic mb-8 border-l-6 border-orange-500 pl-5 uppercase">Storage</h2><div id="grid-fav" class="movie-grid"></div></div>
-            <div id="page-history" class="view hidden"><h2 class="text-3xl font-black italic mb-8 border-l-6 border-orange-500 pl-5 uppercase">History</h2><div id="grid-history" class="movie-grid"></div></div>
-            
+            <div id="page-fav" class="view hidden"><h2 class="text-2xl font-black italic mb-6 border-l-4 border-orange-500 pl-4 uppercase">Favorites</h2><div id="grid-fav" class="movie-grid"></div></div>
+            <div id="page-history" class="view hidden"><h2 class="text-2xl font-black italic mb-6 border-l-4 border-orange-500 pl-4 uppercase">History</h2><div id="grid-history" class="movie-grid"></div></div>
             <div id="page-m3u8" class="view hidden">
-                <div class="glass-card p-12 max-w-md mx-auto mt-10 text-center shadow-2xl">
-                    <h2 class="text-sm font-black mb-6 text-orange-500 uppercase tracking-widest">M3U8 Parser</h2>
-                    <input type="text" id="m3u8-url" placeholder="https://host.com/stream.m3u8" class="w-full bg-black/40 border border-white/10 p-4 rounded-xl mb-4 text-center text-xs outline-none focus:border-orange-500">
-                    <button onclick="playM3U8()" class="w-full bg-orange-600 hover:bg-orange-500 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Parse Now</button>
+                <div class="p-10 max-w-md mx-auto mt-10 text-center bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+                    <h2 class="text-xs font-black mb-6 text-orange-500 uppercase tracking-widest">M3U8 Parser</h2>
+                    <input type="text" id="m3u8-url" placeholder="Paste .m3u8 URL here" class="w-full bg-black/40 border border-white/10 p-4 rounded-xl mb-4 text-center text-xs outline-none">
+                    <button onclick="playM3U8()" class="w-full bg-orange-600 hover:bg-orange-500 py-3.5 rounded-xl font-black text-[10px] uppercase">Analyze & Play</button>
                 </div>
             </div>
-
             <div id="page-local" class="view hidden">
-                <div class="glass-card p-20 max-w-md mx-auto mt-10 border-dashed border-2 border-white/10 text-center hover:border-orange-500 transition group cursor-pointer shadow-2xl" onclick="document.getElementById('local-input').click()">
-                    <input type="file" id="local-input" multiple class="hidden" onchange="handleLocal(this)">
-                    <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto mb-4 opacity-20 group-hover:text-orange-500 group-hover:opacity-100 transition-all"></i>
-                    <span class="font-black text-[10px] tracking-widest uppercase text-zinc-600">載入本地 M3U8 清單</span>
+                <div class="p-20 max-w-md mx-auto mt-10 border-dashed border-2 border-white/10 rounded-3xl text-center group cursor-pointer" onclick="document.getElementById('local-input').click()">
+                    <input type="file" id="local-input" multiple accept="audio/*,video/*" class="hidden" onchange="handleLocal(this)">
+                    <i data-lucide="music" class="w-10 h-10 mx-auto mb-4 opacity-20 group-hover:text-orange-500 transition-all"></i>
+                    <div class="font-black text-[10px] text-zinc-500 uppercase">Load Local Media</div>
                 </div>
             </div>
         </main>
@@ -207,35 +165,28 @@
 
     <!-- 播放器模態框 -->
     <div id="player-modal" class="modal-overlay">
-        <button onclick="closePlayer()" class="fixed top-8 right-8 p-4 glass-card hover:bg-orange-500 z-[2100] transition active:scale-90 shadow-2xl"><i data-lucide="x" class="w-5 h-5"></i></button>
-        
-        <div class="w-full max-w-[1100px] mt-2 mb-20 flex flex-col gap-6">
-            <div id="video-wrapper" class="aspect-video bg-black rounded-[40px] overflow-hidden shadow-2xl border border-white/10">
+        <button onclick="closePlayer()" class="fixed top-6 right-6 p-4 bg-white/5 border border-white/10 rounded-2xl z-[2100]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="w-full max-w-[1000px] mt-2 mb-10">
+            <div class="aspect-video bg-black rounded-[24px] overflow-hidden shadow-2xl border border-white/10 mb-6">
                 <video id="video-core" class="video-js vjs-big-play-centered w-full h-full" controls preload="auto"></video>
             </div>
-
-            <div class="glass-card p-8 flex flex-col md:flex-row gap-8 shadow-2xl">
-                <div class="w-48 flex-shrink-0 hidden md:block">
-                    <img id="v-poster" src="" class="w-full aspect-[3/4.2] rounded-2xl object-cover shadow-xl border border-white/5">
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col md:flex-row gap-6">
+                <div class="w-32 flex-shrink-0 hidden md:block">
+                    <img id="v-poster" class="w-full aspect-[3/4.2] rounded-xl object-cover">
                 </div>
                 <div class="flex-1">
-                    <div class="flex items-start justify-between mb-4 pb-4 border-b border-white/5">
-                        <div class="flex flex-col gap-1">
-                            <h2 id="v-title" class="text-3xl font-black italic tracking-tighter uppercase leading-none">---</h2>
+                    <div class="border-b border-white/5 pb-4 mb-4 flex justify-between items-start">
+                        <div>
+                            <h2 id="v-title" class="text-xl font-black italic mb-2 tracking-tighter">---</h2>
                             <div class="flex items-center gap-3">
-                                <span id="v-remarks" class="bg-orange-600 px-2 py-0.5 rounded-md text-[9px] font-black uppercase">HD</span>
-                                <span id="v-latency" class="text-[8px] font-black text-zinc-500 tracking-widest">PINGING...</span>
+                                <span id="v-remarks" class="bg-orange-600 px-2 py-0.5 rounded text-[8px] font-bold">HD</span>
+                                <span id="v-ping" class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Latency: --</span>
                             </div>
                         </div>
-                        <button id="v-fav-btn" onclick="toggleFav()" class="px-6 py-3 glass-card hover:text-orange-500 transition font-black text-[10px] uppercase flex items-center gap-2">
-                            <i data-lucide="bookmark" class="w-4 h-4"></i><span id="v-fav-text">儲存</span>
-                        </button>
+                        <button id="v-fav-btn" onclick="toggleFav()" class="text-orange-500 text-[10px] font-bold flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i> 儲存</button>
                     </div>
-                    <div class="mb-6">
-                        <h4 class="text-[8px] font-black opacity-30 uppercase tracking-[0.3em] mb-3 italic">Episodes Selection</h4>
-                        <div id="v-episodes" class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar"></div>
-                    </div>
-                    <p id="v-desc" class="text-xs leading-relaxed text-zinc-500 font-medium line-clamp-4"></p>
+                    <div id="v-episodes" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mb-4 max-h-[120px] overflow-y-auto custom-scrollbar"></div>
+                    <p id="v-desc" class="text-[10px] text-zinc-500 line-clamp-3 leading-relaxed"></p>
                 </div>
             </div>
         </div>
@@ -243,82 +194,81 @@
 
     <script>
         const API = '/api/env';
-        let player, dbData = { fav: [], history: [] };
-        let currentVod = null;
-
+        // 類 MoonTV 推薦邏輯常用的資源站 API
         const SOURCES = [
             "https://cj.lziapi.com/api.php/provide/vod/at/json",
-            "https://cj.ffzyapi.com/api.php/provide/vod/at/json",
-            "https://suoniapi.com/api.php/provide/vod/at/json"
+            "https://cj.ffzyapi.com/api.php/provide/vod/at/json"
         ];
+        
+        let player, dbData = { fav: [], history: [] }, currentVod = null;
 
         window.onload = async () => {
             lucide.createIcons();
-            player = videojs('video-core', { 
-                fluid: true, 
-                playbackRates: [0.5, 1, 1.25, 1.5, 2],
-                controlBar: { skipButtons: { forward: 10, backward: 10 } }
-            });
-            
+            player = videojs('video-core', { fluid: true, playbackRates: [0.5, 1, 1.5, 2] });
             startStatMonitor();
             syncCloud();
-
-            document.getElementById('searchInput').addEventListener('keydown', (e) => {
-                if(e.key === 'Enter') startSearch(e.target.value);
-            });
-            startSearch('');
+            document.getElementById('searchInput').addEventListener('keydown', e => e.key === 'Enter' && startSearch(e.target.value));
+            loadHome(); // 初始加載首頁推薦
         };
 
         async function startStatMonitor() {
             const check = async () => {
-                try {
-                    const [d1, kv] = await Promise.all([
-                        fetch(`${API}?action=d1_ping`).then(r => r.json()).catch(() => ({ ms: -1 })),
-                        fetch(`${API}?action=kv_ping`).then(r => r.json()).catch(() => ({ ms: -1 }))
-                    ]);
-                    const d1El = document.getElementById('stat-d1');
-                    d1El.innerText = d1.ms >= 0 ? d1.ms + ' MS' : '-- MS';
-                    d1El.className = d1.ms >= 0 && d1.ms < 400 ? 'text-green-500' : 'text-zinc-600';
-
-                    const kvEl = document.getElementById('stat-kv');
-                    kvEl.innerText = kv.ms >= 0 ? kv.ms + ' MS' : '-- MS';
-                    kvEl.className = kv.ms >= 0 && kv.ms < 400 ? 'text-green-500' : 'text-zinc-600';
-                } catch(e) {}
+                const start = Date.now();
+                fetch(`${API}?action=load_db`).then(() => {
+                    document.getElementById('stat-d1').innerText = (Date.now() - start) + ' MS';
+                }).catch(() => {});
             };
-            check(); setInterval(check, 12000);
+            check(); setInterval(check, 20000);
         }
 
         async function syncCloud() {
             try {
                 const db = await fetch(`${API}?action=load_db`).then(r => r.json());
-                dbData = db;
-                render('fav', dbData.fav);
-                render('history', dbData.history);
+                dbData = db; render('fav', dbData.fav); render('history', dbData.history);
             } catch(e) {}
         }
 
-        async function startSearch(kw) {
-            const grid = document.getElementById('grid-home');
-            grid.innerHTML = '<div class="col-span-full py-48 text-center"><div class="animate-pulse text-orange-500 font-black italic uppercase text-[10px] tracking-[0.8em]">Scanning Nodes...</div></div>';
-            
-            const tasks = SOURCES.map(async (url) => {
-                const target = kw ? `${url}?wd=${encodeURIComponent(kw)}` : url;
-                try { return await fetch(target).then(r => r.json()).then(d => d.list || []); }
-                catch(e) { return []; }
-            });
+        // 核心邏輯：直接向資源站發送請求 (類 MoonTV 實現)
+        async function fetchSource(url, params = "") {
+            try {
+                const start = Date.now();
+                const res = await fetch(`${url}${params}`, { method: 'GET' });
+                const data = await res.json();
+                document.getElementById('stat-src').innerText = (Date.now() - start) + ' MS';
+                return data.list || [];
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                return [];
+            }
+        }
 
-            const results = await Promise.all(tasks);
-            const flat = Array.from(new Map(results.flat().map(v => [v.vod_id, v])).values());
+        async function loadHome() {
+            const grid = document.getElementById('grid-home');
+            grid.innerHTML = '<div class="col-span-full py-20 text-center animate-pulse text-[10px] font-black text-orange-500 uppercase tracking-widest">Syncing with Mainframe...</div>';
+            
+            // 類 MoonTV 首頁邏輯：請求最新更新的資源
+            const results = await Promise.all(SOURCES.map(url => fetchSource(url, "?ac=detail")));
+            let flat = Array.from(new Map(results.flat().map(v => [v.vod_id, v])).values());
+            
+            // 按時間排序並篩選
+            flat = flat.sort((a, b) => new Date(b.vod_time) - new Date(a.vod_time)).slice(0, 48);
+            render('home', flat);
+        }
+
+        async function startSearch(kw) {
+            if(!kw) return loadHome();
+            const grid = document.getElementById('grid-home');
+            grid.innerHTML = '<div class="col-span-full py-20 text-center animate-pulse text-[10px] font-black text-orange-500 uppercase tracking-widest">Searching Nodes...</div>';
+            
+            const results = await Promise.all(SOURCES.map(url => fetchSource(url, `?wd=${encodeURIComponent(kw)}`)));
+            let flat = Array.from(new Map(results.flat().map(v => [v.vod_id, v])).values());
             render('home', flat);
         }
 
         function render(type, data) {
             const grid = document.getElementById(`grid-${type}`);
             if(!grid) return; grid.innerHTML = '';
-            if(!data.length) {
-                grid.innerHTML = '<div class="col-span-full py-20 text-center text-zinc-800 text-[9px] font-black uppercase tracking-widest opacity-40">No Cache Found</div>';
-                return;
-            }
+            if(!data.length) { grid.innerHTML = '<div class="col-span-full py-10 text-center text-zinc-800 text-[8px] font-bold uppercase tracking-widest">Nothing Found</div>'; return; }
             data.forEach(v => {
                 const d = document.createElement('div');
                 d.className = "card-item";
@@ -326,10 +276,10 @@
                 d.innerHTML = `
                     <div class="aspect-[3/4.2] relative bg-zinc-900">
                         <img src="${v.vod_pic}" class="w-full h-full object-cover" loading="lazy">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent"></div>
-                        <div class="absolute bottom-2 left-2 bg-orange-600/90 px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase">${v.vod_remarks || 'HD'}</div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent"></div>
+                        <div class="absolute bottom-1 left-1 bg-orange-600/90 px-1 py-0.5 rounded text-[7px] font-bold">${v.vod_remarks || 'HD'}</div>
                     </div>
-                    <div class="p-2.5 text-[8px] font-black truncate text-center opacity-60 uppercase tracking-tighter">${v.vod_name}</div>
+                    <div class="p-2 text-[8px] font-bold truncate text-center opacity-60 uppercase">${v.vod_name}</div>
                 `;
                 grid.appendChild(d);
             });
@@ -340,86 +290,71 @@
             document.getElementById('player-modal').classList.add('open');
             document.getElementById('v-title').innerText = v.vod_name;
             document.getElementById('v-poster').src = v.vod_pic;
-            document.getElementById('v-remarks').innerText = v.vod_remarks || '4K';
-            document.getElementById('v-desc').innerText = v.vod_content ? v.vod_content.replace(/<[^>]+>/g, '') : 'No description.';
+            document.getElementById('v-remarks').innerText = v.vod_remarks || 'HD';
+            document.getElementById('v-desc').innerText = (v.vod_content || '').replace(/<[^>]+>/g, '');
             
-            const box = document.getElementById('v-episodes');
-            box.innerHTML = '';
-            updateFavBtn();
-            
+            const box = document.getElementById('v-episodes'); box.innerHTML = '';
             const raw = v.vod_play_url || "";
+            // 通用 M3U8 解析邏輯
             const eps = raw.includes('#') ? raw.split('#').map(x => x.split('$')) : [raw.split('$')];
             
             eps.forEach((e, i) => {
                 const btn = document.createElement('button');
-                btn.className = "px-1 py-2.5 bg-white/5 border border-white/5 rounded-xl text-[8px] font-black hover:bg-orange-600 transition-all truncate";
+                btn.className = "px-1 py-2 bg-white/5 border border-white/5 rounded-lg text-[8px] font-bold hover:bg-orange-600 transition truncate";
                 btn.innerText = e[0] || `EP${i+1}`;
                 btn.onclick = () => playEpisode(e[e.length-1], btn);
                 box.appendChild(btn);
                 if(autoPlay && i === 0) playEpisode(e[e.length-1], btn);
             });
+            lucide.createIcons();
         }
 
         function playEpisode(u, btn) {
-            const lat = document.getElementById('v-latency');
-            lat.innerText = "MEASURING...";
-            fetch(`${API}?action=proxy_ping&u=${encodeURIComponent(u)}`).then(r => r.json()).then(res => {
-                lat.innerText = res.ms > 0 ? res.ms + " MS" : "OFFLINE";
-                lat.style.color = res.ms < 700 ? '#22c55e' : '#ef4444';
-            });
-
+            const start = Date.now();
             player.src({ src: u, type: u.includes('m3u8') ? 'application/x-mpegURL' : 'video/mp4' });
             player.play();
+            player.one('canplay', () => {
+                document.getElementById('v-ping').innerText = `Latency: ${Date.now() - start}ms`;
+            });
             saveHistory(currentVod);
             document.getElementById('v-episodes').querySelectorAll('button').forEach(b => b.classList.remove('bg-orange-600'));
             btn.classList.add('bg-orange-600');
-            document.getElementById('player-modal').scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const body = document.body;
-            sidebar.classList.toggle('collapsed');
-            body.classList.toggle('is-collapsed');
-            lucide.createIcons();
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.body.classList.toggle('is-collapsed'); 
         }
 
-        async function toggleFav() {
-            const idx = dbData.fav.findIndex(x => x.vod_id === currentVod.vod_id);
-            if(idx > -1) dbData.fav.splice(idx, 1);
-            else dbData.fav.unshift(currentVod);
-            updateFavBtn(); render('fav', dbData.fav);
-            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
-        }
-
-        function updateFavBtn() {
-            const isFav = dbData.fav.some(x => x.vod_id === currentVod.vod_id);
-            document.getElementById('v-fav-text').innerText = isFav ? "已儲存" : "儲存";
-            document.getElementById('v-fav-btn').style.color = isFav ? '#f97316' : '#fff';
-            lucide.createIcons();
-        }
-
-        function saveHistory(v) {
-            dbData.history = [v, ...dbData.history.filter(x => x.vod_id !== v.vod_id)].slice(0, 50);
-            render('history', dbData.history);
-            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
-        }
-
-        window.showPage = p => {
+        function showPage(p) {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.getElementById(`page-${p}`).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(l => l.classList.remove('active'));
             document.getElementById(`n-${p}`).classList.add('active');
-        };
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        async function toggleFav() {
+            const idx = dbData.fav.findIndex(x => x.vod_id === currentVod.vod_id);
+            if(idx > -1) dbData.fav.splice(idx, 1); else dbData.fav.unshift(currentVod);
+            render('fav', dbData.fav);
+            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
+        }
+
+        function saveHistory(v) {
+            dbData.history = [v, ...dbData.history.filter(x => x.vod_id !== v.vod_id)].slice(0, 30);
+            render('history', dbData.history);
+            fetch(`${API}?action=sync_db`, { method: 'POST', body: JSON.stringify({ payload: dbData }) });
+        }
 
         window.closePlayer = () => { player.pause(); document.getElementById('player-modal').classList.remove('open'); };
         window.playM3U8 = () => {
             const u = document.getElementById('m3u8-url').value;
-            if(u) openVod({ vod_name: "REMOTE STREAM", vod_play_url: `M3U8$${u}`, vod_id: 'm3u8', vod_pic: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81' }, true);
+            if(u) openVod({ vod_name: "REMOTE STREAM", vod_play_url: `M3U8$${u}`, vod_id: Date.now(), vod_pic: 'https://images.unsplash.com/photo-1594908900066-3f47337549d8' }, true);
         };
         window.handleLocal = i => {
             const files = Array.from(i.files).map(f => `${f.name}$${URL.createObjectURL(f)}`);
-            if(files.length) openVod({ vod_name: "LOCAL DISK", vod_play_url: files.join('#'), vod_id: 'local', vod_pic: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400' }, true);
+            if(files.length) openVod({ vod_name: "LOCAL FILES", vod_play_url: files.join('#'), vod_id: 'local', vod_pic: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400' }, true);
         };
     </script>
 </body>
